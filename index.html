@@ -504,7 +504,6 @@ Parse &amp; Import
 </div>
 </div>
 </main>
-
 <script>
 /* ========== STATE ========== */
 let products = [
@@ -518,8 +517,9 @@ let rowId = 0;
 let slabChart = null, mixChart = null;
 let panelMixChart = null, inverterMixChart = null, batteryMixChart = null;
 
-// The cutoff date for Dead Stock incentives
-const DEAD_STOCK_CUTOFF = new Date('2026-05-27');
+// The cutoff date for Dead Stock incentives (May 27, 2026)
+// Using local timezone constructor to avoid UTC offset issues
+const DEAD_STOCK_CUTOFF = new Date(2026, 4, 27); 
 
 /* ========== RESET DASHBOARD ========== */
 function resetDashboard() {
@@ -590,7 +590,7 @@ function addRow(kw, product, project, name, status, saleDate){
         status: status || 'Active',
         product: product || products[0]?.name || 'Standard', 
         kw: kw || 0,
-        saleDate: saleDate || new Date().toISOString().split('T')[0] // Default to today if missing
+        saleDate: saleDate || new Date().toISOString().split('T')[0]
     });
     renderRows(); calculate(); updateActivity();
 }
@@ -720,6 +720,7 @@ function calculate(){
         if(prod && prod.type === 'dead') {
             // Check the date constraint for Dead Stock
             const entryDate = new Date(e.saleDate);
+            // Only count if the sale date is on or after May 27, 2026
             if(entryDate >= DEAD_STOCK_CUTOFF) {
                 deadKw += v;
             }
@@ -921,7 +922,6 @@ const DATE_LINE_RX = /\d{1,2}[-\/](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|D
 
 function parseDate(dateStr) {
     if (!dateStr) return null;
-    // Handle DD-MMM-YYYY format
     const parts = dateStr.split(/[-\/]/);
     if (parts.length === 3) {
         const months = {jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11};
@@ -929,6 +929,7 @@ function parseDate(dateStr) {
         const month = months[parts[1].toLowerCase().substring(0,3)];
         const year = parseInt(parts[2]);
         if (!isNaN(day) && month !== undefined && !isNaN(year)) {
+            // Create date in local timezone to match the cutoff logic
             return new Date(year, month, day).toISOString().split('T')[0];
         }
     }
@@ -948,7 +949,6 @@ function parseCRMTable(lines){
             current = {id:first, lines: [fields], date: null};
         } else if(current) { 
             current.lines.push(fields); 
-            // Look for date in any field of the current record block
             fields.forEach(f => {
                 if(DATE_LINE_RX.test(f)) current.date = parseDate(f);
             });
@@ -979,34 +979,50 @@ function parseCRMTable(lines){
 
 function parseCRMBlocks(lines){
     const boundaries = [];
+    // Find all lines that start with a Record ID (e.g., SA12345 or 3P12345)
     lines.forEach((l,i) => { if(RECORD_ID_RX.test(l)) boundaries.push(i); });
     if(boundaries.length === 0) return null;
+    
     const records = [];
     boundaries.forEach((start,idx) => {
         const end = idx+1 < boundaries.length ? boundaries[idx+1] : lines.length;
         const block = lines.slice(start, end);
+        
+        // 1. Find the kW line
         const kwIdx = block.findIndex(l => KW_LINE_RX.test(l));
         if(kwIdx === -1) return;
         const m = block[kwIdx].match(KW_LINE_RX);
         const solarKW = parseFloat(m[1]);
         const batteryKW = parseFloat(m[2]);
         
-        // Find date in the block
+        // 2. Find the Date anywhere in the block (fixes the May 8th issue)
         let saleDate = null;
-        block.forEach(l => {
-            if(DATE_LINE_RX.test(l)) saleDate = parseDate(l);
-        });
+        for(let i=0; i<block.length; i++) {
+            if(DATE_LINE_RX.test(block[i])) {
+                saleDate = parseDate(block[i]);
+                break; // Stop at the first date found
+            }
+        }
 
+        // 3. Extract Product Names by walking backward from the kW line
         const productNames = [];
         let i = kwIdx - 1;
-        while(i - 1 >= 0 && /^\d+$/.test(block[i-1]) && !RECORD_ID_RX.test(block[i])){
-            productNames.unshift(block[i]);
-            i -= 2;
+        while(i >= 0 && !RECORD_ID_RX.test(block[i])){
+            // Look for lines that are just a number (quantity) followed by a product name
+            // or lines that start with a quantity and product together
+            if(/^\d+$/.test(block[i]) && i-1 >= 0 && !RECORD_ID_RX.test(block[i-1])) {
+                 productNames.unshift(block[i-1]);
+                 i -= 2;
+            } else {
+                i--;
+            }
         }
+        
         const id = block[0];
         const isDead = productNames.some(p => DEAD_BRAND_RX.test(p));
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
+        
         records.push({id, solarKW, batteryKW, isDead, batteryProd, solarProd, date: saleDate});
     });
     return records.length ? records : null;
@@ -1101,7 +1117,6 @@ function parseUploadedRows(rows){
 
         const customerName = cells[1] || 'Unknown';
         
-        // Find date in cells
         let saleDate = null;
         cells.forEach(c => {
             if(DATE_LINE_RX.test(c)) saleDate = parseDate(c);
