@@ -518,29 +518,70 @@ let rowId = 0;
 let slabChart = null, mixChart = null;
 let panelMixChart = null, inverterMixChart = null, batteryMixChart = null;
 
-// The cutoff date for Dead Stock incentives (May 27, 2026)
-const DEAD_STOCK_CUTOFF = new Date(2026, 4, 27); 
+// DEAD STOCK CUTOFF: May 27, 2026 (local time, month is 0-indexed so 4 = May)
+const DEAD_STOCK_CUTOFF_YEAR = 2026;
+const DEAD_STOCK_CUTOFF_MONTH = 4; // May
+const DEAD_STOCK_CUTOFF_DAY = 27;
+
+/* ========== DATE HELPERS ========== */
+// Returns a plain object to avoid ANY timezone interpretation issues
+function parseDateObj(dateStr) {
+    if (!dateStr) return null;
+    const parts = dateStr.split(/[-\/]/);
+    if (parts.length === 3) {
+        const months = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+        const day = parseInt(parts[0], 10);
+        const month = months[parts[1].toLowerCase().substring(0,3)];
+        const year = parseInt(parts[2], 10);
+        if (!isNaN(day) && month !== undefined && !isNaN(year)) {
+            return { year, month, day };
+        }
+    }
+    return null;
+}
+
+// Compare two local-time date objects: returns true if a >= b
+function isDateOnOrAfter(aYear, aMonth, aDay, bYear, bMonth, bDay) {
+    if (aYear !== bYear) return aYear > bYear;
+    if (aMonth !== bMonth) return aMonth > bMonth;
+    return aDay >= bDay;
+}
+
+function formatDateDisplay(dateObj) {
+    if (!dateObj) return 'Unknown';
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${String(dateObj.day).padStart(2,'0')}-${monthNames[dateObj.month]}-${dateObj.year}`;
+}
+
+function getTodayDateObj() {
+    const d = new Date();
+    return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate() };
+}
 
 /* ========== RESET DASHBOARD ========== */
 function resetDashboard() {
-    if (confirm("⚠️ Are you sure you want to reset the dashboard?")) {
+    if (confirm("⚠️ Are you sure you want to reset the dashboard?\n\nThis will:\n- Clear all entered sales data and custom products\n- Clear cookies for this site\n- Force a hard refresh to clear the browser cache\n\nThis action cannot be undone.")) {
         document.cookie.split(";").forEach(function(c) { 
             document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/"); 
         });
-        try { localStorage.clear(); sessionStorage.clear(); } catch(e) { /* ignore */ }
-        window.location.reload();
+        try { localStorage.clear(); sessionStorage.clear(); } catch(e) {}
+        // Destroy charts before reload to prevent ghost datasets
+        [slabChart, mixChart, panelMixChart, inverterMixChart, batteryMixChart].forEach(c => { if(c) c.destroy(); });
+        const url = new URL(window.location.href);
+        url.searchParams.set('nocache', Date.now().toString());
+        window.location.replace(url.toString());
     }
 }
 
 /* ========== TAB SWITCHING ========== */
 function switchTab(tabName){
-    document.querySelectorAll('.tab-btn').forEach(t => { t.classList.toggle('active', t.dataset.tab === tabName); });
-    document.querySelectorAll('.nav-item').forEach(n => { n.classList.toggle('active', n.dataset.nav === tabName); });
-    document.querySelectorAll('.tab-panel').forEach(p => { p.classList.toggle('active', p.id === 'tab-' + tabName); });
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.nav === tabName));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabName));
     document.querySelector('.sidebar').classList.remove('open');
 }
-document.querySelectorAll('.tab-btn').forEach(btn => { btn.addEventListener('click', () => switchTab(btn.dataset.tab)); });
-document.querySelectorAll('.nav-item').forEach(item => { item.addEventListener('click', () => switchTab(item.dataset.nav)); });
+document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => switchTab(item.dataset.nav)));
 
 /* ========== PRODUCTS ========== */
 function renderProducts(){
@@ -581,7 +622,7 @@ function refreshProductDropdowns(){
 }
 
 /* ========== ENTRIES ========== */
-function addRow(kw, product, project, name, status, saleDate){
+function addRow(kw, product, project, name, status, saleDateObj){
     const id = rowId++;
     entries.push({
         id, 
@@ -590,7 +631,7 @@ function addRow(kw, product, project, name, status, saleDate){
         status: status || 'Active',
         product: product || products[0]?.name || 'Standard', 
         kw: kw || 0,
-        saleDate: saleDate || new Date().toISOString().split('T')[0]
+        saleDate: saleDateObj || getTodayDateObj()
     });
     renderRows(); calculate(); updateActivity();
 }
@@ -601,6 +642,16 @@ function removeRow(id){
 function removeEntriesForProject(projectId){
     entries = entries.filter(e => e.project !== projectId);
 }
+
+// Content-aware dedup: only removes if project + kw + product all match
+function removeDuplicateEntry(projectId, kw, productName) {
+    entries = entries.filter(e => !(
+        e.project === projectId && 
+        Math.abs(parseFloat(e.kw) - kw) < 0.01 && 
+        e.product.toLowerCase() === productName.toLowerCase()
+    ));
+}
+
 function renderRows(){
     const body = document.getElementById('entryBody');
     const search = (document.getElementById('tableSearch').value || '').toLowerCase();
@@ -615,7 +666,7 @@ function renderRows(){
     });
 
     if(filtered.length === 0){
-        body.innerHTML = '<tr><td colspan="6"><div class="empty-state"><h4>No entries found</h4></div></td></tr>';
+        body.innerHTML = '<tr><td colspan="6"><div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h4>No entries found</h4><p>Add your first sale or import data to get started.</p></div></td></tr>';
         return;
     }
 
@@ -635,7 +686,7 @@ function renderRows(){
             <td><span class="status-badge ${type}"><span class="dot"></span>${type==='dead'?'Dead Stock':'Standard'}</span></td>
             <td class="kw-cell">${kw.toFixed(2)} kW</td>
             <td><span style="color:${statusColor}; font-size:0.82rem; font-weight:700;">${e.status || 'Active'}</span></td>
-            <td><div class="row-actions"><button class="delete" onclick="removeRow(${e.id})" title="Delete">✕</button></div></td>
+            <td><div class="row-actions"><button class="delete" onclick="removeRow(${e.id})" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></td>
         `;
         body.appendChild(tr);
     });
@@ -687,7 +738,6 @@ function sunboostCalc(totalKw){
     if(kw <= 0){ base = 0; bonus = 0; rows.forEach(r => {r.kw = 0; r.amt = 0;}); }
     return {base, bonus, total: base + bonus, rows, kw};
 }
-
 function deadStockCalc(deadKw){
     const kw = Math.max(0, deadKw);
     const slabs = [
@@ -709,7 +759,6 @@ function inr(n){ return '₹' + n.toLocaleString('en-IN', { minimumFractionDigit
 
 function calculate(){
     let totalKw = 0, deadKw = 0;
-    
     entries.forEach(e => {
         const v = parseFloat(e.kw);
         if(isNaN(v) || v <= 0) return;
@@ -717,15 +766,18 @@ function calculate(){
         totalKw += v;
 
         const prod = products.find(p => p.name.trim().toLowerCase() === e.product.trim().toLowerCase());
-        if(prod && prod.type === 'dead') {
-            // Check the date constraint for Dead Stock
-            const entryDate = new Date(e.saleDate);
-            if(entryDate >= DEAD_STOCK_CUTOFF) {
+        if(prod && prod.type === 'dead' && e.saleDate) {
+            // Pure local-time comparison — NO timezone drift possible
+            if(isDateOnOrAfter(
+                e.saleDate.year, e.saleDate.month, e.saleDate.day,
+                DEAD_STOCK_CUTOFF_YEAR, DEAD_STOCK_CUTOFF_MONTH, DEAD_STOCK_CUTOFF_DAY
+            )) {
                 deadKw += v;
             }
         }
     });
 
+    // Round BEFORE slab math to prevent IEEE 754 boundary errors
     totalKw = Math.round(totalKw * 100) / 100;
     deadKw = Math.round(deadKw * 100) / 100;
 
@@ -753,7 +805,7 @@ function calculate(){
     updateProgress(totalKw);
 }
 
-/* ========== CHARTS & ACTIVITY ========== */
+/* ========== CHARTS ========== */
 function updateCharts(sun, dead) {
     if(typeof Chart === 'undefined') return;
     try {
@@ -769,7 +821,7 @@ function updateCharts(sun, dead) {
                 slabChart = new Chart(ctx.getContext('2d'), {
                     type:'bar',
                     data:{ labels: slabLabels, datasets:[{ label: 'Amount (₹)', data: slabData, backgroundColor: ['#0176D3','#1B96FF','#45BFFF', '#2E844A', '#9050E9','#FE9339'], borderRadius:6, borderSkipped:false }] },
-                    options:{ responsive:true, maintainAspectRatio:false, plugins: {legend: {display:false}}, scales:{x:{grid:{display:false}},y:{grid:{color: '#F3F3F3'}}} }
+                    options:{ responsive:true, maintainAspectRatio:false, plugins: {legend: {display:false}, tooltip: {backgroundColor: '#032D60', padding:12, cornerRadius:6, callbacks: {label: ctx=>'₹'+ctx.parsed.y.toLocaleString('en-IN')}}}, scales:{x:{grid:{display:false}, ticks: {font:{size:11, weight:'600'}}},y:{grid:{color: '#F3F3F3'}, ticks: {callback:v=>'₹'+v.toLocaleString('en-IN'), font: {size:11}}}} }
                 });
             }
         }
@@ -790,13 +842,14 @@ function updateCharts(sun, dead) {
                 mixChart = new Chart(ctx2.getContext('2d'), {
                     type: 'doughnut',
                     data:{ labels: ['Standard', 'Dead Stock'], datasets:[{data:mixData, backgroundColor: ['#0176D3','#9050E9'], borderWidth:0, cutout:'70%'}] },
-                    options:{ responsive:true, maintainAspectRatio:false, plugins: {legend: {position:'bottom'}} }
+                    options:{ responsive:true, maintainAspectRatio:false, plugins: {legend: {position:'bottom', labels: {padding:16, font: {size:12, weight:'600'}}}, tooltip: {backgroundColor: '#032D60', padding: 12, cornerRadius:6, callbacks: {label:ctx=> `${ctx.label}: ${ctx.parsed.toFixed(2)} kW`}}} }
                 });
             }
         }
     } catch(err){ console.warn('Chart error:', err); }
 }
 
+/* ========== CATEGORY MIX CHARTS ========== */
 function classifyProduct(name){
     if(/^JAM/i.test(name)) return {brand:'JA Solar', category:'panel'};
     if(/^JKM/i.test(name)) return {brand:'Jinko', category:'panel'};
@@ -841,7 +894,7 @@ function computeCategoryMix(category){
     if(pairs.length > MAX_SLICES){
         const head = pairs.slice(0, MAX_SLICES);
         const tailTotal = pairs.slice(MAX_SLICES).reduce((sum,p) => sum + p[1], 0);
-        pairs = [...head, [`Other`, tailTotal]];
+        pairs = [...head, [`Other (${pairs.length - MAX_SLICES} brands)`, tailTotal]];
     }
     return { labels: pairs.map(p=>p[0]), data: pairs.map(p=>p[1]), total };
 }
@@ -856,6 +909,7 @@ function renderCategoryChart(canvasId, chartVarSetter, chartVarGetter, category,
     const labels = hasData ? mix.labels : [emptyLabel];
     const data = hasData ? mix.data : [1];
     const colors = hasData ? CATEGORY_PALETTE : ['#E5E5E5'];
+    const total = mix.total;
 
     let chart = chartVarGetter();
     if(chart){
@@ -867,7 +921,45 @@ function renderCategoryChart(canvasId, chartVarSetter, chartVarGetter, category,
         chart = new Chart(ctx.getContext('2d'), {
             type: 'doughnut',
             data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, cutout: '65%' }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 10, font: { size: 10, weight: '600' }, boxWidth: 10,
+                            generateLabels: (chart) => {
+                                const ds = chart.data.datasets[0];
+                                const dataArr = ds.data;
+                                const lbls = chart.data.labels;
+                                const isEmpty = lbls.length === 1 && lbls[0] === emptyLabel;
+                                const grandTotal = dataArr.reduce((a,b)=>a+b, 0);
+                                return lbls.map((label, i) => {
+                                    if(isEmpty) return { text: label, fillStyle: ds.backgroundColor[i], strokeStyle: ds.backgroundColor[i], index: i };
+                                    const value = dataArr[i];
+                                    const pct = grandTotal > 0 ? (value / grandTotal * 100).toFixed(1) : '0.0';
+                                    return {
+                                        text: `${label} — ${value.toFixed(2)} kW (${pct}%)`,
+                                        fillStyle: ds.backgroundColor[i],
+                                        strokeStyle: ds.backgroundColor[i],
+                                        index: i
+                                    };
+                                });
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#032D60', padding: 12, cornerRadius: 6,
+                        callbacks: {
+                            label: (c) => {
+                                if(!hasData) return 'No sales yet';
+                                const pct = total > 0 ? (c.parsed / total * 100).toFixed(1) : '0.0';
+                                return `${c.label}: ${c.parsed.toFixed(2)} kW (${pct}%)`;
+                            }
+                        }
+                    }
+                }
+            }
         });
         chartVarSetter(chart);
     }
@@ -875,11 +967,14 @@ function renderCategoryChart(canvasId, chartVarSetter, chartVarGetter, category,
 
 function updateCategoryCharts(){
     if(typeof Chart === 'undefined') return;
-    renderCategoryChart('panelMixChart', (c)=>panelMixChart=c, ()=>panelMixChart, 'panel', 'No panels yet');
-    renderCategoryChart('inverterMixChart', (c)=>inverterMixChart=c, ()=>inverterMixChart, 'inverter', 'No inverters yet');
-    renderCategoryChart('batteryMixChart', (c)=>batteryMixChart=c, ()=>batteryMixChart, 'battery', 'No batteries yet');
+    try {
+        renderCategoryChart('panelMixChart', (c)=>panelMixChart=c, ()=>panelMixChart, 'panel', 'No panels yet');
+        renderCategoryChart('inverterMixChart', (c)=>inverterMixChart=c, ()=>inverterMixChart, 'inverter', 'No inverters yet');
+        renderCategoryChart('batteryMixChart', (c)=>batteryMixChart=c, ()=>batteryMixChart, 'battery', 'No batteries yet');
+    } catch(err){ console.warn('Category chart error:', err); }
 }
 
+/* ========== PROGRESS ========== */
 function updateProgress(totalKw){
     const tiers = [
         {label: 'Next: ₹25,000 bonus', target:1000, color:''},
@@ -894,10 +989,11 @@ function updateProgress(totalKw){
     }).join('');
 }
 
+/* ========== ACTIVITY ========== */
 function updateActivity(){
     const list = document.getElementById('activityList');
     if(entries.length === 0){
-        list.innerHTML = '<div class="empty-state" style="padding:24px;"><p>No activity yet.</p></div>';
+        list.innerHTML = '<div class="empty-state" style="padding:24px;"><p>No activity yet. Import sales to get started.</p></div>';
         return;
     }
     const recent = entries.slice(-5).reverse();
@@ -905,7 +1001,8 @@ function updateActivity(){
         const prod = products.find(p => p.name.toLowerCase() === e.product.toLowerCase());
         const type = prod ? prod.type : 'std';
         const iconClass = type === 'dead' ? 'purple' : 'blue';
-        return `<div class="activity-item fade-in"><div class="activity-icon ${iconClass}">📦</div><div class="activity-content"><div class="activity-title">Added <strong>${e.project || 'Project'}</strong> - ${parseFloat(e.kw).toFixed(2)} kW</div><div class="activity-meta">${type==='dead'?'Dead Stock':'Standard'} • ${e.saleDate}</div></div></div>`;
+        const dateDisplay = formatDateDisplay(e.saleDate);
+        return `<div class="activity-item fade-in"><div class="activity-icon ${iconClass}">📦</div><div class="activity-content"><div class="activity-title">Added <strong>${e.project || 'Project'} (${e.name || 'Customer'})</strong> - ${parseFloat(e.kw).toFixed(2)} kW</div><div class="activity-meta">${type==='dead'?'Dead Stock':'Standard'} • ${dateDisplay} • ${e.status || 'Active'}</div></div></div>`;
     }).join('');
 }
 
@@ -914,25 +1011,10 @@ const DEAD_BRAND_RX = /ESY|SMILE|FORCE-H|SIH-|SIEB|PYLON|ALPHA|SWATTEN/i;
 const BATTERY_HINT_RX = /KWH|\bBAT\b|\bEC\s?\d|SH-HM|SMILE|FORCE-H|SIH-|SIEB/i;
 const PANEL_HINT_RX = /JAM|SPDG|IEC\s?61215|LR|PANEL/i;
 const RECORD_ID_RX = /^[A-Za-z0-9]{1,4}\d{3,}$/;
-const PRODUCT_CELL_RX = /^\d+[A-Za-z][A-Za-z0-9\-\/]{2,}/;
 const KW_LINE_RX = /^(\d+(?:\.\d+)?)\s*kW\s*\+\s*(\d+(?:\.\d+)?)\s*kW$/i;
-// Regex to find dates like 20-Aug-2026 or 20/08/2026
 const DATE_LINE_RX = /\d{1,2}[-\/](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-\/]\d{4}/i;
-
-function parseDate(dateStr) {
-    if (!dateStr) return null;
-    const parts = dateStr.split(/[-\/]/);
-    if (parts.length === 3) {
-        const months = {jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11};
-        const day = parseInt(parts[0]);
-        const month = months[parts[1].toLowerCase().substring(0,3)];
-        const year = parseInt(parts[2]);
-        if (!isNaN(day) && month !== undefined && !isNaN(year)) {
-            return new Date(year, month, day).toISOString().split('T')[0];
-        }
-    }
-    return null;
-}
+// Matches lines like "1 ESY-SH-HM-5-H" or "28 JAM54D40-475/LR (IEC 61215-2021)"
+const QTY_PRODUCT_RX = /^\d+\s+[A-Za-z][A-Za-z0-9\-\/\(\)\s]+$/;
 
 function parseCRMTable(lines){
     const hasTabs = lines.some(l => l.includes('\t'));
@@ -944,11 +1026,11 @@ function parseCRMTable(lines){
         const first = fields[0];
         if (RECORD_ID_RX.test(first)){
             if(current) records.push(current);
-            current = {id:first, lines: [fields], date: null};
+            current = {id:first, lines: [fields], dateObj: null};
         } else if(current) { 
             current.lines.push(fields); 
             fields.forEach(f => {
-                if(DATE_LINE_RX.test(f)) current.date = parseDate(f);
+                if(DATE_LINE_RX.test(f) && !current.dateObj) current.dateObj = parseDateObj(f);
             });
         }
     });
@@ -963,21 +1045,23 @@ function parseCRMTable(lines){
                 if(!f) return;
                 const kwm = f.match(KW_LINE_RX);
                 if(kwm){ solarKW = parseFloat(kwm[1]); batteryKW = parseFloat(kwm[2]); return; }
-                if(PRODUCT_CELL_RX.test(f)) productNames.push(f.replace(/^\d+/, ''));
+                if(QTY_PRODUCT_RX.test(f.trim())) {
+                    productNames.push(f.trim().replace(/^\d+\s+/, ''));
+                }
             });
         });
         if(solarKW === null || batteryKW === null) return;
         const isDead = productNames.some(p => DEAD_BRAND_RX.test(p));
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
-        results.push({id:rec.id, solarKW, batteryKW, isDead, batteryProd, solarProd, date: rec.date});
+        results.push({id:rec.id, solarKW, batteryKW, isDead, batteryProd, solarProd, dateObj: rec.dateObj});
     });
     return results.length ? results : null;
 }
 
 function parseCRMBlocks(lines){
     const boundaries = [];
-    lines.forEach((l,i) => { if(RECORD_ID_RX.test(l)) boundaries.push(i); });
+    lines.forEach((l,i) => { if(RECORD_ID_RX.test(l.trim())) boundaries.push(i); });
     if(boundaries.length === 0) return null;
     const records = [];
     boundaries.forEach((start,idx) => {
@@ -989,23 +1073,28 @@ function parseCRMBlocks(lines){
         const solarKW = parseFloat(m[1]);
         const batteryKW = parseFloat(m[2]);
         
-        // Find date in the block
-        let saleDate = null;
-        block.forEach(l => {
-            if(DATE_LINE_RX.test(l)) saleDate = parseDate(l);
-        });
-
-        const productNames = [];
-        let i = kwIdx - 1;
-        while(i - 1 >= 0 && /^\d+$/.test(block[i-1]) && !RECORD_ID_RX.test(block[i])){
-            productNames.unshift(block[i]);
-            i -= 2;
+        // Scan ENTIRE block for date (fixes the May 8th bug where date was missed)
+        let saleDateObj = null;
+        for(let i = 0; i < block.length; i++) {
+            if(DATE_LINE_RX.test(block[i]) && !saleDateObj) {
+                saleDateObj = parseDateObj(block[i].trim());
+            }
         }
-        const id = block[0];
+
+        // Extract ALL product names between Record ID and kW line
+        const productNames = [];
+        for(let i = 1; i < kwIdx; i++) {
+            const line = block[i].trim();
+            if(QTY_PRODUCT_RX.test(line)) {
+                productNames.push(line.replace(/^\d+\s+/, ''));
+            }
+        }
+
+        const id = block[0].trim();
         const isDead = productNames.some(p => DEAD_BRAND_RX.test(p));
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
-        records.push({id, solarKW, batteryKW, isDead, batteryProd, solarProd, date: saleDate});
+        records.push({id, solarKW, batteryKW, isDead, batteryProd, solarProd, dateObj: saleDateObj});
     });
     return records.length ? records : null;
 }
@@ -1039,6 +1128,29 @@ function parseSimpleLines(lines){
     return {added, newProducts};
 }
 
+function processRecords(crmRecords, sourceLabel){
+    let added = 0, newProducts = 0, duplicatesSkipped = 0;
+    crmRecords.forEach(r => {
+        if(r.solarKW > 0){
+            const res = ensureProduct(r.solarProd, 'std');
+            if(res.created) newProducts++;
+            // Content-aware dedup instead of blind project-ID wipe
+            removeDuplicateEntry(r.id, r.solarKW, res.p.name);
+            addRow(r.solarKW, res.p.name, r.id, 'Client', 'Active', r.dateObj);
+            added++;
+        }
+        if(r.batteryKW > 0){
+            const res = ensureProduct(r.batteryProd, r.isDead? 'dead': 'std');
+            if(res.created) newProducts++;
+            removeDuplicateEntry(r.id, r.batteryKW, res.p.name);
+            addRow(r.batteryKW, res.p.name, r.id, 'Client', 'Active', r.dateObj);
+            added++;
+        }
+    });
+    renderProducts(); renderRows(); calculate(); updateActivity();
+    return {added, newProducts, duplicatesSkipped};
+}
+
 function parsePaste(){
     const raw = document.getElementById('pasteBox').value;
     const status = document.getElementById('pasteStatus');
@@ -1047,36 +1159,17 @@ function parsePaste(){
     
     const crmRecords = parseCRMTable(lines) || parseCRMBlocks(lines);
     if(crmRecords){
-        let added = 0, newProducts = 0, updatedProjects = 0;
-        crmRecords.forEach(r => {
-            const alreadyExists = entries.some(e => e.project === r.id);
-            removeEntriesForProject(r.id);
-            if(alreadyExists) updatedProjects++;
-
-            if(r.solarKW > 0){
-                const res = ensureProduct(r.solarProd, 'std');
-                if(res.created) newProducts++;
-                addRow(r.solarKW, res.p.name, r.id, 'Client', 'Active', r.date);
-                added++;
-            }
-            if(r.batteryKW > 0){
-                const res = ensureProduct(r.batteryProd, r.isDead? 'dead': 'std');
-                if(res.created) newProducts++;
-                addRow(r.batteryKW, res.p.name, r.id, 'Client', 'Active', r.date);
-                added++;
-            }
-        });
-        renderProducts(); renderRows(); calculate(); updateActivity();
-        status.textContent = `✔ Recognized ${crmRecords.length} CRM rows → added ${added} sale lines`;
+        const {added, newProducts} = processRecords(crmRecords, 'CRM');
+        status.textContent = `✔ Recognized ${crmRecords.length} CRM rows → added ${added} sale lines` + (newProducts ? `, ${newProducts} new product${newProducts===1?'':'s'}` : '');
         status.className = 'paste-status success';
     } else {
         const {added, newProducts} = parseSimpleLines(lines);
         renderProducts(); renderRows(); calculate(); updateActivity();
         if(added > 0){
-            status.textContent = `✔ Added ${added} sale line${added===1?'':'s'}`;
+            status.textContent = `✔ Added ${added} sale line${added===1?'':'s'}` + (newProducts ? `, ${newProducts} new product${newProducts===1?'':'s'} added as Standard — check types in Products tab.` : '.');
             status.className = 'paste-status success';
         } else {
-            status.textContent = 'Could not parse format.';
+            status.textContent = 'Could not parse format. Please check structure.';
             status.className = 'paste-status';
         }
     }
@@ -1099,11 +1192,13 @@ function parseUploadedRows(rows){
 
         const customerName = cells[1] || 'Unknown';
         
-        // Find date in cells
-        let saleDate = null;
-        cells.forEach(c => {
-            if(DATE_LINE_RX.test(c)) saleDate = parseDate(c);
-        });
+        // Find date in ANY cell (was missing in original file upload parser)
+        let saleDateObj = null;
+        for(let i = 0; i < cells.length; i++) {
+            if(DATE_LINE_RX.test(cells[i]) && !saleDateObj) {
+                saleDateObj = parseDateObj(cells[i]);
+            }
+        }
 
         const productNames = [];
         for(let i=0; i<cells.length-1; i++){
@@ -1122,7 +1217,7 @@ function parseUploadedRows(rows){
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
 
-        records.push({id: idCell, customerName, solarKW, batteryKW, isDead, batteryProd, solarProd, date: saleDate});
+        records.push({id: idCell, customerName, solarKW, batteryKW, isDead, batteryProd, solarProd, dateObj: saleDateObj});
     });
     return records;
 }
@@ -1145,10 +1240,11 @@ function handleFileUpload() {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
             let rows = [];
+            let sheetsWithData = 0;
             workbook.SheetNames.forEach(name => {
                 const worksheet = workbook.Sheets[name];
                 const sheetRows = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
-                if(sheetRows.length > 0){ rows = rows.concat(sheetRows); }
+                if(sheetRows.length > 0){ sheetsWithData++; rows = rows.concat(sheetRows); }
             });
             if (rows.length === 0) {
                 statusLabel.style.color = "var(--error)";
@@ -1158,32 +1254,13 @@ function handleFileUpload() {
             const records = parseUploadedRows(rows);
             if (records.length === 0) {
                 statusLabel.style.color = "var(--error)";
-                statusLabel.innerText = "Could not recognize any rows.";
+                statusLabel.innerText = "Could not recognize any rows — expected a Project ID and a \"X kW + Y kW\" cell.";
                 return;
             }
-            let added = 0, newProducts = 0, updatedProjects = 0;
-            records.forEach(r => {
-                const alreadyExists = entries.some(e => e.project === r.id);
-                removeEntriesForProject(r.id);
-                if(alreadyExists) updatedProjects++;
-
-                if(r.solarKW > 0){
-                    const res = ensureProduct(r.solarProd, 'std');
-                    if(res.created) newProducts++;
-                    addRow(r.solarKW, res.p.name, r.id, r.customerName, 'Active', r.date);
-                    added++;
-                }
-                if(r.batteryKW > 0){
-                    const res = ensureProduct(r.batteryProd, r.isDead ? 'dead' : 'std');
-                    if(res.created) newProducts++;
-                    addRow(r.batteryKW, res.p.name, r.id, r.customerName, 'Active', r.date);
-                    added++;
-                }
-            });
+            const {added, newProducts} = processRecords(records, 'File');
             statusLabel.style.color = "var(--success)";
-            statusLabel.innerText = `Success! Recognized ${records.length} rows → added ${added} sale lines.`;
+            statusLabel.innerText = `Success! Read ${sheetsWithData} sheet${sheetsWithData===1?'':'s'}, recognized ${records.length} rows → added ${added} sale lines` + (newProducts ? ` (${newProducts} new products added).` : '.');
             fileInput.value = "";
-            renderProducts(); renderRows(); calculate(); updateActivity();
         } catch (error) {
             console.error(error);
             statusLabel.style.color = "var(--error)";
