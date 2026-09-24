@@ -542,7 +542,7 @@ function parseSafeDate(str) {
 }
 
 function isEligible(dateObj) {
-    if (!dateObj) return false; // If no date found, assume ineligible for safety
+    if (!dateObj) return true; // FIX: If no date found, assume ELIGIBLE (default to today's logic)
     if (dateObj.y > CUTOFF_Y) return true;
     if (dateObj.y < CUTOFF_Y) return false;
     if (dateObj.m > CUTOFF_M) return true;
