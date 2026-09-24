@@ -119,7 +119,7 @@ tbody tr:last-child td{border-bottom:none;}
 .status-badge .dot{width:6px;height:6px;border-radius:50%; background:currentColor;}
 .kw-cell{font-weight:700;color:var(--text); font-variant-numeric:tabular-nums;}
 .row-actions{display: flex; gap:4px;}
-.row-actions button{width:28px;height:28px;border-radius:6px;border:none; background:transparent;color:var(--muted); cursor:pointer;display: flex;align-items:center; justify-content:center;transition:all 0.15s;}
+.row-actions button{width:28px;height:28px;border-radius:6px;border:none; background:transparent;color:var(--muted); cursor:pointer;display: flex; align-items:center; justify-content:center;transition:all 0.15s;}
 .row-actions button:hover{background:#F3F3F3;color:var(--text);}
 .row-actions button.delete:hover{background:var(--error-bg);color:var(--error);}
 
@@ -439,7 +439,7 @@ Add Entry
 <div class="card">
 <div class="card-header"><h3>Product Catalog</h3></div>
 <div class="card-body">
-<p style="font-size:0.85rem;color:var(--muted); margin-bottom:16px;">Manage your product catalog. Products marked as <strong style="color:var(--purple);">Dead Stock</strong> will automatically qualify for the Dead Stock add-on incentive.</p>
+<p style="font-size:0.85rem;color:var(--muted); margin-bottom:16px;">Manage your product catalog. Products marked as <strong style="color:var(--purple);">Dead Stock</strong> will automatically qualify for the Dead Stock add-on incentive (from 27-May-2026).</p>
 <div class="chips-wrap" id="productList"></div>
 <div style="display: flex; gap:10px; flex-wrap:wrap; align-items:flex-end; padding-top:16px;border-top:1px solid var(--border);">
 <div class="form-group" style="flex:2;min-width:200px;">
@@ -462,7 +462,7 @@ Add Entry
 <div class="tab-panel" id="tab-import">
 <div class="paste-area" style="margin-bottom: 16px;">
 <h3>Upload CSV or Excel File</h3>
-<p style="font-size:0.85rem; color:var(--muted); margin-bottom:12px;">Import raw data spreadsheets directly (Columns can include: Project, Name, Product, kW, Status).</p>
+<p style="font-size:0.85rem; color:var(--muted); margin-bottom:12px;">Import raw data spreadsheets directly (Columns can include: Project, Name, Product, kW, Status, Date).</p>
 <input type="file" id="fileUpload" accept=".csv, .xlsx, .xls" style="margin-bottom: 12px; display: block;" />
 <button class="btn btn-primary" onclick="handleFileUpload()">Upload File</button>
 <span id="uploadStatus" style="margin-left: 10px; font-size: 0.9rem; font-weight: 600;"></span>
@@ -470,8 +470,8 @@ Add Entry
 
 <div class="paste-area">
 <h3>Paste CRM Data</h3>
-<p style="font-size:0.85rem;color:var(--muted); margin-bottom:12px;">Paste your CRM export below. Supports tab-separated tables, line-per-field blocks, and simple lines. Both <strong>SA...</strong> and <strong>3P...</strong> record IDs are supported.</p>
-<textarea id="pasteBox" placeholder="SA99109&#10;Stephen Bishop&#10;...&#10;0kW + 25.6kW&#10;..."></textarea>
+<p style="font-size:0.85rem;color:var(--muted); margin-bottom:12px;">Paste your CRM export below. Supports tab-separated tables, line-per-field blocks, and simple lines. Both <strong>SA...</strong> and <strong>3P...</strong> record IDs are supported. Active Date is auto-detected for Dead Stock eligibility (≥ 27-May-2026).</p>
+<textarea id="pasteBox" placeholder="SA99109&#10;Stephen Bishop&#10;20-Aug-2026&#10;...&#10;0kW + 25.6kW&#10;..."></textarea>
 <div class="paste-actions">
 <button class="btn btn-primary" onclick="parsePaste()">
 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -518,45 +518,9 @@ let rowId = 0;
 let slabChart = null, mixChart = null;
 let panelMixChart = null, inverterMixChart = null, batteryMixChart = null;
 
-// DEAD STOCK CUTOFF: May 27, 2026 (local time, month is 0-indexed so 4 = May)
-const DEAD_STOCK_CUTOFF_YEAR = 2026;
-const DEAD_STOCK_CUTOFF_MONTH = 4; // May
-const DEAD_STOCK_CUTOFF_DAY = 27;
-
-/* ========== DATE HELPERS ========== */
-// Returns a plain object to avoid ANY timezone interpretation issues
-function parseDateObj(dateStr) {
-    if (!dateStr) return null;
-    const parts = dateStr.split(/[-\/]/);
-    if (parts.length === 3) {
-        const months = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
-        const day = parseInt(parts[0], 10);
-        const month = months[parts[1].toLowerCase().substring(0,3)];
-        const year = parseInt(parts[2], 10);
-        if (!isNaN(day) && month !== undefined && !isNaN(year)) {
-            return { year, month, day };
-        }
-    }
-    return null;
-}
-
-// Compare two local-time date objects: returns true if a >= b
-function isDateOnOrAfter(aYear, aMonth, aDay, bYear, bMonth, bDay) {
-    if (aYear !== bYear) return aYear > bYear;
-    if (aMonth !== bMonth) return aMonth > bMonth;
-    return aDay >= bDay;
-}
-
-function formatDateDisplay(dateObj) {
-    if (!dateObj) return 'Unknown';
-    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${String(dateObj.day).padStart(2,'0')}-${monthNames[dateObj.month]}-${dateObj.year}`;
-}
-
-function getTodayDateObj() {
-    const d = new Date();
-    return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate() };
-}
+// BUG FIX #1: Use string constant for timezone-safe comparison
+// "2026-05-27" as a string compares correctly regardless of browser timezone
+const DEAD_STOCK_CUTOFF_STR = '2026-05-27';
 
 /* ========== RESET DASHBOARD ========== */
 function resetDashboard() {
@@ -564,9 +528,7 @@ function resetDashboard() {
         document.cookie.split(";").forEach(function(c) { 
             document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/"); 
         });
-        try { localStorage.clear(); sessionStorage.clear(); } catch(e) {}
-        // Destroy charts before reload to prevent ghost datasets
-        [slabChart, mixChart, panelMixChart, inverterMixChart, batteryMixChart].forEach(c => { if(c) c.destroy(); });
+        try { localStorage.clear(); sessionStorage.clear(); } catch(e) { /* ignore */ }
         const url = new URL(window.location.href);
         url.searchParams.set('nocache', Date.now().toString());
         window.location.replace(url.toString());
@@ -575,13 +537,13 @@ function resetDashboard() {
 
 /* ========== TAB SWITCHING ========== */
 function switchTab(tabName){
-    document.querySelectorAll('.tab-btn').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.nav === tabName));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabName));
+    document.querySelectorAll('.tab-btn').forEach(t => { t.classList.toggle('active', t.dataset.tab === tabName); });
+    document.querySelectorAll('.nav-item').forEach(n => { n.classList.toggle('active', n.dataset.nav === tabName); });
+    document.querySelectorAll('.tab-panel').forEach(p => { p.classList.toggle('active', p.id === 'tab-' + tabName); });
     document.querySelector('.sidebar').classList.remove('open');
 }
-document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
-document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => switchTab(item.dataset.nav)));
+document.querySelectorAll('.tab-btn').forEach(btn => { btn.addEventListener('click', () => switchTab(btn.dataset.tab)); });
+document.querySelectorAll('.nav-item').forEach(item => { item.addEventListener('click', () => switchTab(item.dataset.nav)); });
 
 /* ========== PRODUCTS ========== */
 function renderProducts(){
@@ -622,8 +584,13 @@ function refreshProductDropdowns(){
 }
 
 /* ========== ENTRIES ========== */
-function addRow(kw, product, project, name, status, saleDateObj){
+// BUG FIX #1 (cont.): saleDate stored as "YYYY-MM-DD" string, never converted through Date object
+function addRow(kw, product, project, name, status, saleDate){
     const id = rowId++;
+    const today = new Date();
+    const todayStr = today.getFullYear() + '-' + 
+        String(today.getMonth()+1).padStart(2,'0') + '-' + 
+        String(today.getDate()).padStart(2,'0');
     entries.push({
         id, 
         project: project || `SA${Math.floor(10000 + Math.random() * 90000)}`, 
@@ -631,7 +598,7 @@ function addRow(kw, product, project, name, status, saleDateObj){
         status: status || 'Active',
         product: product || products[0]?.name || 'Standard', 
         kw: kw || 0,
-        saleDate: saleDateObj || getTodayDateObj()
+        saleDate: saleDate || todayStr
     });
     renderRows(); calculate(); updateActivity();
 }
@@ -639,17 +606,14 @@ function removeRow(id){
     entries = entries.filter(e => e.id !== id);
     renderRows(); calculate(); updateActivity();
 }
-function removeEntriesForProject(projectId){
-    entries = entries.filter(e => e.project !== projectId);
-}
 
-// Content-aware dedup: only removes if project + kw + product all match
-function removeDuplicateEntry(projectId, kw, productName) {
-    entries = entries.filter(e => !(
+// BUG FIX #3: Content-aware deduplication instead of blind project-ID deletion
+function isDuplicateEntry(projectId, kw, productName) {
+    return entries.some(e => 
         e.project === projectId && 
         Math.abs(parseFloat(e.kw) - kw) < 0.01 && 
         e.product.toLowerCase() === productName.toLowerCase()
-    ));
+    );
 }
 
 function renderRows(){
@@ -761,23 +725,19 @@ function calculate(){
     let totalKw = 0, deadKw = 0;
     entries.forEach(e => {
         const v = parseFloat(e.kw);
-        if(isNaN(v) || v <= 0) return;
-
-        totalKw += v;
-
-        const prod = products.find(p => p.name.trim().toLowerCase() === e.product.trim().toLowerCase());
-        if(prod && prod.type === 'dead' && e.saleDate) {
-            // Pure local-time comparison — NO timezone drift possible
-            if(isDateOnOrAfter(
-                e.saleDate.year, e.saleDate.month, e.saleDate.day,
-                DEAD_STOCK_CUTOFF_YEAR, DEAD_STOCK_CUTOFF_MONTH, DEAD_STOCK_CUTOFF_DAY
-            )) {
-                deadKw += v;
+        if(!isNaN(v) && v > 0){
+            totalKw += v;
+            const prod = products.find(p => p.name.trim().toLowerCase() === e.product.trim().toLowerCase());
+            if(prod && prod.type === 'dead') {
+                // BUG FIX #1 (cont.): String comparison is timezone-safe
+                // "2026-05-27" >= "2026-05-27" → true
+                // "2026-05-08" >= "2026-05-27" → false
+                if(e.saleDate >= DEAD_STOCK_CUTOFF_STR) {
+                    deadKw += v;
+                }
             }
         }
     });
-
-    // Round BEFORE slab math to prevent IEEE 754 boundary errors
     totalKw = Math.round(totalKw * 100) / 100;
     deadKw = Math.round(deadKw * 100) / 100;
 
@@ -789,7 +749,7 @@ function calculate(){
     document.getElementById('kpiSunAmt').textContent = inr(sun.total);
     document.getElementById('kpiSunSub').textContent = `${totalKw.toFixed(2)} kW · Base ${inr(sun.base)} + bonus ${inr(sun.bonus)}`;
     document.getElementById('kpiDeadAmt').textContent = inr(dead.total);
-    document.getElementById('kpiDeadSub').textContent = `${deadKw.toFixed(2)} kW dead stock (Post-May 27)`;
+    document.getElementById('kpiDeadSub').textContent = `${deadKw.toFixed(2)} kW dead stock (≥ 27-May-2026)`;
     document.getElementById('kpiComboAmt').textContent = inr(combo);
     document.getElementById('kpiComboSub').textContent = `${totalKw.toFixed(2)} kW total (${deadKw.toFixed(2)} kW eligible dead stock)`;
 
@@ -901,6 +861,7 @@ function computeCategoryMix(category){
 
 const CATEGORY_PALETTE = ['#0176D3','#1B96FF','#45BFFF','#9050E9','#C29DF2','#2E844A','#6BC490','#FE9339','#FFC078','#B85C00','#0B8ECC','#706E6B'];
 
+// BUG FIX #5: Tooltip percentage calculated from live dataset, not stale closure
 function renderCategoryChart(canvasId, chartVarSetter, chartVarGetter, category, emptyLabel){
     const mix = computeCategoryMix(category);
     const ctx = document.getElementById(canvasId);
@@ -909,7 +870,6 @@ function renderCategoryChart(canvasId, chartVarSetter, chartVarGetter, category,
     const labels = hasData ? mix.labels : [emptyLabel];
     const data = hasData ? mix.data : [1];
     const colors = hasData ? CATEGORY_PALETTE : ['#E5E5E5'];
-    const total = mix.total;
 
     let chart = chartVarGetter();
     if(chart){
@@ -953,7 +913,9 @@ function renderCategoryChart(canvasId, chartVarSetter, chartVarGetter, category,
                         callbacks: {
                             label: (c) => {
                                 if(!hasData) return 'No sales yet';
-                                const pct = total > 0 ? (c.parsed / total * 100).toFixed(1) : '0.0';
+                                // BUG FIX #5: Calculate total from current dataset
+                                const currentTotal = c.dataset.data.reduce((a,b)=>a+b, 0);
+                                const pct = currentTotal > 0 ? (c.parsed / currentTotal * 100).toFixed(1) : '0.0';
                                 return `${c.label}: ${c.parsed.toFixed(2)} kW (${pct}%)`;
                             }
                         }
@@ -1001,8 +963,7 @@ function updateActivity(){
         const prod = products.find(p => p.name.toLowerCase() === e.product.toLowerCase());
         const type = prod ? prod.type : 'std';
         const iconClass = type === 'dead' ? 'purple' : 'blue';
-        const dateDisplay = formatDateDisplay(e.saleDate);
-        return `<div class="activity-item fade-in"><div class="activity-icon ${iconClass}">📦</div><div class="activity-content"><div class="activity-title">Added <strong>${e.project || 'Project'} (${e.name || 'Customer'})</strong> - ${parseFloat(e.kw).toFixed(2)} kW</div><div class="activity-meta">${type==='dead'?'Dead Stock':'Standard'} • ${dateDisplay} • ${e.status || 'Active'}</div></div></div>`;
+        return `<div class="activity-item fade-in"><div class="activity-icon ${iconClass}">📦</div><div class="activity-content"><div class="activity-title">Added <strong>${e.project || 'Project'} (${e.name || 'Customer'})</strong> - ${parseFloat(e.kw).toFixed(2)} kW</div><div class="activity-meta">${type==='dead'?'Dead Stock':'Standard'} • ${e.saleDate} • Status: ${e.status || 'Active'}</div></div></div>`;
     }).join('');
 }
 
@@ -1011,10 +972,25 @@ const DEAD_BRAND_RX = /ESY|SMILE|FORCE-H|SIH-|SIEB|PYLON|ALPHA|SWATTEN/i;
 const BATTERY_HINT_RX = /KWH|\bBAT\b|\bEC\s?\d|SH-HM|SMILE|FORCE-H|SIH-|SIEB/i;
 const PANEL_HINT_RX = /JAM|SPDG|IEC\s?61215|LR|PANEL/i;
 const RECORD_ID_RX = /^[A-Za-z0-9]{1,4}\d{3,}$/;
+const PRODUCT_CELL_RX = /^\d+[A-Za-z][A-Za-z0-9\-\/]{2,}/;
 const KW_LINE_RX = /^(\d+(?:\.\d+)?)\s*kW\s*\+\s*(\d+(?:\.\d+)?)\s*kW$/i;
 const DATE_LINE_RX = /\d{1,2}[-\/](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-\/]\d{4}/i;
-// Matches lines like "1 ESY-SH-HM-5-H" or "28 JAM54D40-475/LR (IEC 61215-2021)"
-const QTY_PRODUCT_RX = /^\d+\s+[A-Za-z][A-Za-z0-9\-\/\(\)\s]+$/;
+
+// BUG FIX #1 (cont.): Returns "YYYY-MM-DD" string directly, no Date object conversion
+function parseDate(dateStr) {
+    if (!dateStr) return null;
+    const parts = dateStr.split(/[-\/]/);
+    if (parts.length === 3) {
+        const months = {jan:'01', feb:'02', mar:'03', apr:'04', may:'05', jun:'06', jul:'07', aug:'08', sep:'09', oct:'10', nov:'11', dec:'12'};
+        const day = String(parseInt(parts[0])).padStart(2,'0');
+        const month = months[parts[1].toLowerCase().substring(0,3)];
+        const year = parseInt(parts[2]);
+        if (day && month && !isNaN(year)) {
+            return `${year}-${month}-${day}`;
+        }
+    }
+    return null;
+}
 
 function parseCRMTable(lines){
     const hasTabs = lines.some(l => l.includes('\t'));
@@ -1026,11 +1002,11 @@ function parseCRMTable(lines){
         const first = fields[0];
         if (RECORD_ID_RX.test(first)){
             if(current) records.push(current);
-            current = {id:first, lines: [fields], dateObj: null};
+            current = {id:first, lines: [fields], date: null};
         } else if(current) { 
             current.lines.push(fields); 
             fields.forEach(f => {
-                if(DATE_LINE_RX.test(f) && !current.dateObj) current.dateObj = parseDateObj(f);
+                if(DATE_LINE_RX.test(f)) current.date = parseDate(f);
             });
         }
     });
@@ -1045,23 +1021,22 @@ function parseCRMTable(lines){
                 if(!f) return;
                 const kwm = f.match(KW_LINE_RX);
                 if(kwm){ solarKW = parseFloat(kwm[1]); batteryKW = parseFloat(kwm[2]); return; }
-                if(QTY_PRODUCT_RX.test(f.trim())) {
-                    productNames.push(f.trim().replace(/^\d+\s+/, ''));
-                }
+                if(PRODUCT_CELL_RX.test(f)) productNames.push(f.replace(/^\d+/, ''));
             });
         });
-        if(solarKW === null || batteryKW === null) return;
+        // BUG FIX #4: Allow 0kW values (null means not found, 0 means explicitly zero)
+        if(solarKW === null && batteryKW === null) return;
         const isDead = productNames.some(p => DEAD_BRAND_RX.test(p));
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
-        results.push({id:rec.id, solarKW, batteryKW, isDead, batteryProd, solarProd, dateObj: rec.dateObj});
+        results.push({id:rec.id, solarKW: solarKW||0, batteryKW: batteryKW||0, isDead, batteryProd, solarProd, date: rec.date});
     });
     return results.length ? results : null;
 }
 
 function parseCRMBlocks(lines){
     const boundaries = [];
-    lines.forEach((l,i) => { if(RECORD_ID_RX.test(l.trim())) boundaries.push(i); });
+    lines.forEach((l,i) => { if(RECORD_ID_RX.test(l)) boundaries.push(i); });
     if(boundaries.length === 0) return null;
     const records = [];
     boundaries.forEach((start,idx) => {
@@ -1073,28 +1048,41 @@ function parseCRMBlocks(lines){
         const solarKW = parseFloat(m[1]);
         const batteryKW = parseFloat(m[2]);
         
-        // Scan ENTIRE block for date (fixes the May 8th bug where date was missed)
-        let saleDateObj = null;
-        for(let i = 0; i < block.length; i++) {
-            if(DATE_LINE_RX.test(block[i]) && !saleDateObj) {
-                saleDateObj = parseDateObj(block[i].trim());
+        // Find date anywhere in the block
+        let saleDate = null;
+        for(let di=0; di<block.length; di++) {
+            if(DATE_LINE_RX.test(block[di])) {
+                saleDate = parseDate(block[di]);
+                if(saleDate) break;
             }
         }
 
-        // Extract ALL product names between Record ID and kW line
+        // BUG FIX #2: Improved product extraction with single-line fallback
         const productNames = [];
-        for(let i = 1; i < kwIdx; i++) {
+        let i = kwIdx - 1;
+        while(i >= 0 && !RECORD_ID_RX.test(block[i])){
             const line = block[i].trim();
-            if(QTY_PRODUCT_RX.test(line)) {
-                productNames.push(line.replace(/^\d+\s+/, ''));
+            // Check for qty + product on separate lines
+            if(/^\d+$/.test(line) && i-1 >= 0 && !RECORD_ID_RX.test(block[i-1])) {
+                const prodLine = block[i-1].trim();
+                if(prodLine && !DATE_LINE_RX.test(prodLine) && !KW_LINE_RX.test(prodLine)) {
+                    productNames.unshift(prodLine);
+                    i -= 2;
+                    continue;
+                }
             }
+            // BUG FIX #2: Also capture products on their own line (no separate qty line)
+            if(PRODUCT_CELL_RX.test(line) && !KW_LINE_RX.test(line) && !DATE_LINE_RX.test(line)) {
+                productNames.unshift(line.replace(/^\d+/, ''));
+            }
+            i--;
         }
-
-        const id = block[0].trim();
+        
+        const id = block[0];
         const isDead = productNames.some(p => DEAD_BRAND_RX.test(p));
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
-        records.push({id, solarKW, batteryKW, isDead, batteryProd, solarProd, dateObj: saleDateObj});
+        records.push({id, solarKW, batteryKW, isDead, batteryProd, solarProd, date: saleDate});
     });
     return records.length ? records : null;
 }
@@ -1128,29 +1116,6 @@ function parseSimpleLines(lines){
     return {added, newProducts};
 }
 
-function processRecords(crmRecords, sourceLabel){
-    let added = 0, newProducts = 0, duplicatesSkipped = 0;
-    crmRecords.forEach(r => {
-        if(r.solarKW > 0){
-            const res = ensureProduct(r.solarProd, 'std');
-            if(res.created) newProducts++;
-            // Content-aware dedup instead of blind project-ID wipe
-            removeDuplicateEntry(r.id, r.solarKW, res.p.name);
-            addRow(r.solarKW, res.p.name, r.id, 'Client', 'Active', r.dateObj);
-            added++;
-        }
-        if(r.batteryKW > 0){
-            const res = ensureProduct(r.batteryProd, r.isDead? 'dead': 'std');
-            if(res.created) newProducts++;
-            removeDuplicateEntry(r.id, r.batteryKW, res.p.name);
-            addRow(r.batteryKW, res.p.name, r.id, 'Client', 'Active', r.dateObj);
-            added++;
-        }
-    });
-    renderProducts(); renderRows(); calculate(); updateActivity();
-    return {added, newProducts, duplicatesSkipped};
-}
-
 function parsePaste(){
     const raw = document.getElementById('pasteBox').value;
     const status = document.getElementById('pasteStatus');
@@ -1159,8 +1124,30 @@ function parsePaste(){
     
     const crmRecords = parseCRMTable(lines) || parseCRMBlocks(lines);
     if(crmRecords){
-        const {added, newProducts} = processRecords(crmRecords, 'CRM');
-        status.textContent = `✔ Recognized ${crmRecords.length} CRM rows → added ${added} sale lines` + (newProducts ? `, ${newProducts} new product${newProducts===1?'':'s'}` : '');
+        let added = 0, newProducts = 0, skippedDuplicates = 0;
+        crmRecords.forEach(r => {
+            // BUG FIX #3: Content-aware dedup instead of blind project wipe
+            if(r.solarKW > 0){
+                const res = ensureProduct(r.solarProd, 'std');
+                if(res.created) newProducts++;
+                if(!isDuplicateEntry(r.id, r.solarKW, res.p.name)) {
+                    addRow(r.solarKW, res.p.name, r.id, 'Client', 'Active', r.date);
+                    added++;
+                } else { skippedDuplicates++; }
+            }
+            if(r.batteryKW > 0){
+                const res = ensureProduct(r.batteryProd, r.isDead? 'dead': 'std');
+                if(res.created) newProducts++;
+                if(!isDuplicateEntry(r.id, r.batteryKW, res.p.name)) {
+                    addRow(r.batteryKW, res.p.name, r.id, 'Client', 'Active', r.date);
+                    added++;
+                } else { skippedDuplicates++; }
+            }
+        });
+        renderProducts(); renderRows(); calculate(); updateActivity();
+        let msg = `✔ Recognized ${crmRecords.length} CRM rows → added ${added} sale lines`;
+        if(skippedDuplicates > 0) msg += ` (${skippedDuplicates} duplicates skipped)`;
+        status.textContent = msg;
         status.className = 'paste-status success';
     } else {
         const {added, newProducts} = parseSimpleLines(lines);
@@ -1182,7 +1169,7 @@ function parseUploadedRows(rows){
         if(!Array.isArray(row)) return;
         const cells = row.map(c => (c===null||c===undefined) ? '' : String(c).trim());
         const idCell = cells.find(c => RECORD_ID_RX.test(c));
-        if(!idCell) return; 
+        if(!idCell) return;
 
         const kwIdx = cells.findIndex(c => KW_LINE_RX.test(c));
         if(kwIdx === -1) return;
@@ -1192,13 +1179,10 @@ function parseUploadedRows(rows){
 
         const customerName = cells[1] || 'Unknown';
         
-        // Find date in ANY cell (was missing in original file upload parser)
-        let saleDateObj = null;
-        for(let i = 0; i < cells.length; i++) {
-            if(DATE_LINE_RX.test(cells[i]) && !saleDateObj) {
-                saleDateObj = parseDateObj(cells[i]);
-            }
-        }
+        let saleDate = null;
+        cells.forEach(c => {
+            if(DATE_LINE_RX.test(c)) saleDate = parseDate(c);
+        });
 
         const productNames = [];
         for(let i=0; i<cells.length-1; i++){
@@ -1217,7 +1201,7 @@ function parseUploadedRows(rows){
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
 
-        records.push({id: idCell, customerName, solarKW, batteryKW, isDead, batteryProd, solarProd, dateObj: saleDateObj});
+        records.push({id: idCell, customerName, solarKW, batteryKW, isDead, batteryProd, solarProd, date: saleDate});
     });
     return records;
 }
@@ -1257,10 +1241,33 @@ function handleFileUpload() {
                 statusLabel.innerText = "Could not recognize any rows — expected a Project ID and a \"X kW + Y kW\" cell.";
                 return;
             }
-            const {added, newProducts} = processRecords(records, 'File');
+            let added = 0, newProducts = 0, skippedDuplicates = 0;
+            records.forEach(r => {
+                // BUG FIX #3: Content-aware dedup for file uploads too
+                if(r.solarKW > 0){
+                    const res = ensureProduct(r.solarProd, 'std');
+                    if(res.created) newProducts++;
+                    if(!isDuplicateEntry(r.id, r.solarKW, res.p.name)) {
+                        addRow(r.solarKW, res.p.name, r.id, r.customerName, 'Active', r.date);
+                        added++;
+                    } else { skippedDuplicates++; }
+                }
+                if(r.batteryKW > 0){
+                    const res = ensureProduct(r.batteryProd, r.isDead ? 'dead' : 'std');
+                    if(res.created) newProducts++;
+                    if(!isDuplicateEntry(r.id, r.batteryKW, res.p.name)) {
+                        addRow(r.batteryKW, res.p.name, r.id, r.customerName, 'Active', r.date);
+                        added++;
+                    } else { skippedDuplicates++; }
+                }
+            });
             statusLabel.style.color = "var(--success)";
-            statusLabel.innerText = `Success! Read ${sheetsWithData} sheet${sheetsWithData===1?'':'s'}, recognized ${records.length} rows → added ${added} sale lines` + (newProducts ? ` (${newProducts} new products added).` : '.');
+            let msg = `Success! Read ${sheetsWithData} sheet${sheetsWithData===1?'':'s'}, recognized ${records.length} rows → added ${added} sale lines`;
+            if(newProducts > 0) msg += ` (${newProducts} new products added)`;
+            if(skippedDuplicates > 0) msg += ` (${skippedDuplicates} duplicates skipped)`;
+            statusLabel.innerText = msg + '.';
             fileInput.value = "";
+            renderProducts(); renderRows(); calculate(); updateActivity();
         } catch (error) {
             console.error(error);
             statusLabel.style.color = "var(--error)";
