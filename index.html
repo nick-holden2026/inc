@@ -21,7 +21,6 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-padding-top:80px;}
 body{background:var(--bg); color:var(--text); font-family:var(--font); line-height:1.5; -webkit-font-smoothing:antialiased; overflow-x:hidden; min-height:100vh; display: flex; flex-direction:column;}
-
 .topbar{position:fixed;top:0;left:0;right:0;height:56px;z-index:100;background:var(--navy);color:#fff; display: flex; align-items:center; padding:0 20px;gap:16px;box-shadow:0 1px 4px rgba(0,0,0,0.2);}
 .topbar .logo{width:32px;height:32px;border-radius:8px; background: linear-gradient(135deg, #00A1E0,#0176D3); display: flex; align-items:center; justify-content:center;font-weight:800;font-size:0.95rem; flex:none;}
 .topbar .brand{font-size:1rem;font-weight:700;letter-spacing:-0.01em;}
@@ -36,7 +35,6 @@ body{background:var(--bg); color:var(--text); font-family:var(--font); line-heig
 .topbar .icon-btn:hover{background:rgba(255,255,255,0.12);}
 .topbar .icon-btn .badge{position:absolute;top:4px;right:4px;width:16px;height:16px;border-radius:50%; background:var(--error); color:#fff;font-size:0.65rem; font-weight:700; display: flex; align-items:center; justify-content:center;border:2px solid var(--navy);}
 .topbar .avatar{width:32px;height:32px;border-radius:50%; background:linear-gradient(135deg, #FF7A59,#FF5A36); display: flex; align-items:center; justify-content:center;font-weight:700;font-size:0.8em;cursor:pointer;}
-
 .sidebar{position:fixed; top:56px;left:0;bottom:0;width:232px;background:var(--panel); border-right:1px solid var(--border); overflow-y:auto;z-index:50; transition:transform 0.25s;}
 .sidebar .nav-section{padding:16px 0;}
 .sidebar .nav-label{padding:0 20px; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.08em;color:var(--muted); font-weight:700; margin-bottom:6px;}
@@ -45,7 +43,6 @@ body{background:var(--bg); color:var(--text); font-family:var(--font); line-heig
 .sidebar .nav-item.active {background:var(--primary-bg);color:var(--primary); border-left-color:var(--primary); font-weight:600;}
 .sidebar .nav-item svg{flex:none;opacity:0.7;}
 .sidebar .nav-item.active svg{opacity:1;}
-
 .main{margin-left:232px;margin-top:56px; flex:1; display: flex; flex-direction:column; min-height:calc(100vh - 56px);}
 .page-header{background:var(--panel); border-bottom:1px solid var(--border); padding:20px 32px 0;}
 .page-header .breadcrumb {font-size:0.78rem;color:var(--muted); margin-bottom:6px;}
@@ -67,7 +64,6 @@ body{background:var(--bg); color:var(--text); font-family:var(--font); line-heig
 .content{padding:24px 32px; flex:1;}
 .tab-panel{display:none;}
 .tab-panel.active{display:block;}
-
 .kpi-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;margin-bottom:24px;}
 .kpi-card{background:var(--panel); border-radius:var(--radius-lg); padding:20px;border:1px solid var(--border); box-shadow:var(--shadow-sm); position:relative; overflow:hidden;}
 .kpi-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--primary);}
@@ -85,14 +81,12 @@ body{background:var(--bg); color:var(--text); font-family:var(--font); line-heig
 .kpi-card .kpi-sub{font-size:0.8em;color:var(--muted); margin-top:4px;}
 .kpi-card .kpi-trend{display:inline-flex; align-items:center; gap:3px; font-size:0.75rem;font-weight:700;padding:2px 8px;border-radius:10px; margin-top:8px;}
 .kpi-trend.up{background:var(--success-bg); color:var(--success);}
-
 .charts-row{display:grid; grid-template-columns:2fr 1fr; gap:16px;margin-bottom:24px;}
 .card{background:var(--panel); border-radius:var(--radius-lg); border:1px solid var(--border); box-shadow:var(--shadow-sm); overflow:hidden;}
 .card-header{padding:16px 20px; border-bottom:1px solid var(--border); display: flex;align-items:center; justify-content:space-between;}
 .card-header h3{font-size:0.95rem; font-weight:700;color:var(--text);}
 .card-body{padding:20px;}
 .chart-wrap{position:relative; height:280px;}
-
 .table-toolbar{padding:12px 20px; border-bottom:1px solid var(--border); display: flex;gap:10px;align-items:center; flex-wrap:wrap;}
 .table-toolbar .filter-chip{padding:5px 12px; border-radius:14px;font-size:0.78rem;font-weight:600;background:#F3F3F3;color:var(--text-secondary); cursor:pointer;border:1px solid transparent;transition:all 0.15s;}
 .table-toolbar .filter-chip:hover{background:#E5E5E5;}
@@ -119,10 +113,9 @@ tbody tr:last-child td{border-bottom:none;}
 .status-badge .dot{width:6px;height:6px;border-radius:50%; background:currentColor;}
 .kw-cell{font-weight:700;color:var(--text); font-variant-numeric:tabular-nums;}
 .row-actions{display: flex; gap:4px;}
-.row-actions button{width:28px;height:28px;border-radius:6px;border:none; background:transparent;color:var(--muted); cursor:pointer;display: flex;align-items:center; justify-content:center;transition:all 0.15s;}
+.row-actions button{width:28px;height:28px;border-radius:6px;border:none; background:transparent;color:var(--muted); cursor:pointer;display: flex; align-items:center; justify-content:center;transition:all 0.15s;}
 .row-actions button:hover{background:#F3F3F3;color:var(--text);}
 .row-actions button.delete:hover{background:var(--error-bg);color:var(--error);}
-
 .activity-list{padding:0;}
 .activity-item{display: flex; gap:12px;padding:12px 20px; border-bottom:1px solid var(--border); transition:background 0.1s;}
 .activity-item:last-child {border-bottom:none;}
@@ -134,7 +127,6 @@ tbody tr:last-child td{border-bottom:none;}
 .activity-title{font-size:0.85rem;color:var(--text); font-weight:500;}
 .activity-title strong{font-weight:700;}
 .activity-meta{font-size:0.75rem;color:var(--muted); margin-top:2px;}
-
 .progress-section{padding:20px;}
 .progress-item{margin-bottom:18px;}
 .progress-item:last-child {margin-bottom:0;}
@@ -145,13 +137,11 @@ tbody tr:last-child td{border-bottom:none;}
 .progress-fill{height:100%;border-radius:4px;transition:width 0.6s ease; background:linear-gradient(90deg, var(--primary), var(--primary-light));}
 .progress-fill.success{background:linear-gradient(90deg, var(--success), #45b05f);}
 .progress-fill.purple{background:linear-gradient(90deg, var(--purple), #a570f0);}
-
 .slab-table thead th{padding:10px 16px;}
 .slab-table tbody td{padding:10px 16px;font-variant-numeric:tabular-nums;}
 .slab-table tbody tr.current{background:var(--primary-bg);}
 .slab-table tbody tr.current td{font-weight:600;}
 .slab-amount{font-weight:700;color:var(--text);}
-
 .add-entry-form{padding:16px 20px; background:#FAFAF9; border-bottom:1px solid var(--border); display:none;}
 .add-entry-form.show{display:block;}
 .form-row{display: flex; gap:12px;align-items:flex-end; flex-wrap:wrap;}
@@ -159,7 +149,6 @@ tbody tr:last-child td{border-bottom:none;}
 .form-group label{display:block;font-size:0.75rem; font-weight:700;color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px;}
 .form-group input,.form-group select,.form-group textarea{width:100%; padding:8px 12px;border:1px solid var(--border-dark); border-radius:6px;font-family:var(--font); font-size:0.875rem; background:#fff; outline:none;transition:border-color 0.15s, box-shadow 0.15s;}
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus {border-color:var(--primary); box-shadow:0 0 0 2px rgba(1,118,211,0.15);}
-
 .paste-area{padding:20px;background:var(--panel); border-radius:var(--radius-lg); border:1px solid var(--border); box-shadow:var(--shadow-sm);margin-bottom:16px;}
 .paste-area h3{font-size:0.95rem; font-weight:700; margin-bottom:12px;}
 .paste-area textarea{width:100%; min-height:120px; padding:12px; border:1px solid var(--border-dark); border-radius:6px;font-family: 'SF Mono', Consolas, monospace; font-size:0.82rem; background:#FAFAF9; resize:vertical; outline:none;}
@@ -167,19 +156,16 @@ tbody tr:last-child td{border-bottom:none;}
 .paste-actions{display: flex; gap:10px;margin-top:12px;align-items:center; flex-wrap:wrap;}
 .paste-status{font-size:0.82rem;color:var(--muted); font-style:italic;}
 .paste-status.success{color:var(--success); font-style:normal;font-weight:600;}
-
 .chips-wrap{display: flex; flex-wrap:wrap; gap:8px;margin-bottom:16px;}
 .chip{display:inline-flex; align-items:center; gap:8px;padding:6px 12px 6px 14px;border-radius:16px;font-size:0.82rem; font-weight:600; border:1px solid var(--border); background:var(--panel);}
 .chip.dead{background:var(--purple-bg); border-color:#E0D0F0;color:var(--purple);}
 .chip.std{background:var(--success-bg); border-color:#C8E6D0; color:var(--success);}
 .chip button{border:none; background:transparent;color:inherit; cursor:pointer;width:18px;height:18px;border-radius:50%; display: flex; align-items:center; justify-content:center;font-size:0.9rem; opacity:0.6;transition:all 0.15s;}
 .chip button:hover{opacity:1;background:rgba(0,0,0,0.08);}
-
 .empty-state{padding:48px 24px;text-align:center;color:var(--muted);}
 .empty-state svg{opacity:0.3;margin-bottom:12px;}
 .empty-state h4{font-size:1rem;color:var(--text); margin-bottom:4px;}
 .empty-state p{font-size:0.85rem;}
-
 @keyframes sparkle {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
@@ -201,7 +187,6 @@ footer {
     border-top: 1px solid var(--border);
     background: var(--panel);
 }
-
 @media (max-width: 1024px){.kpi-grid{grid-template-columns:repeat(2,1fr);}.charts-row{grid-template-columns:1fr;}}
 @media (max-width:768px){.sidebar {transform:translateX(-100%);}.sidebar.open{transform:translateX(0);}.main{margin-left:0;}.content{padding:16px;}.page-header {padding:16px 16px 0;}.kpi-grid{grid-template-columns:1fr;}.menu-toggle{display:flex !important;}}
 .menu-toggle{display:none;}
@@ -214,7 +199,6 @@ footer {
 </style>
 </head>
 <body>
-
 <header class="topbar">
 <button class="icon-btn menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')" aria-label="Menu">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -237,7 +221,6 @@ footer {
 <div class="avatar" title="Profile">SB</div>
 </div>
 </header>
-
 <aside class="sidebar">
 <nav class="nav-section">
 <div class="nav-label">Main</div>
@@ -263,7 +246,6 @@ Reports
 </div>
 </nav>
 </aside>
-
 <main class="main">
 <div class="page-header">
 <div class="breadcrumb">
@@ -293,7 +275,6 @@ New Sale
 <button class="tab-btn" data-tab="reports">Reports</button>
 </div>
 </div>
-
 <div class="content">
 <div class="tab-panel active" id="tab-dashboard">
 <div class="kpi-grid">
@@ -368,7 +349,6 @@ New Sale
 </div>
 </div>
 </div>
-
 <div class="tab-panel" id="tab-sales">
 <div class="card">
 <div class="card-header">
@@ -434,12 +414,11 @@ Add Entry
 </div>
 </div>
 </div>
-
 <div class="tab-panel" id="tab-products">
 <div class="card">
 <div class="card-header"><h3>Product Catalog</h3></div>
 <div class="card-body">
-<p style="font-size:0.85rem;color:var(--muted); margin-bottom:16px;">Manage your product catalog. Products marked as <strong style="color:var(--purple);">Dead Stock</strong> will automatically qualify for the Dead Stock add-on incentive.</p>
+<p style="font-size:0.85rem;color:var(--muted); margin-bottom:16px;">Manage your product catalog. Products marked as <strong style="color:var(--purple);">Dead Stock</strong> will automatically qualify for the Dead Stock add-on incentive (from 27-May-2026).</p>
 <div class="chips-wrap" id="productList"></div>
 <div style="display: flex; gap:10px; flex-wrap:wrap; align-items:flex-end; padding-top:16px;border-top:1px solid var(--border);">
 <div class="form-group" style="flex:2;min-width:200px;">
@@ -458,20 +437,18 @@ Add Entry
 </div>
 </div>
 </div>
-
 <div class="tab-panel" id="tab-import">
 <div class="paste-area" style="margin-bottom: 16px;">
 <h3>Upload CSV or Excel File</h3>
-<p style="font-size:0.85rem; color:var(--muted); margin-bottom:12px;">Import raw data spreadsheets directly (Columns can include: Project, Name, Product, kW, Status).</p>
+<p style="font-size:0.85rem; color:var(--muted); margin-bottom:12px;">Import raw data spreadsheets directly (Columns can include: Project, Name, Product, kW, Status, Date).</p>
 <input type="file" id="fileUpload" accept=".csv, .xlsx, .xls" style="margin-bottom: 12px; display: block;" />
 <button class="btn btn-primary" onclick="handleFileUpload()">Upload File</button>
 <span id="uploadStatus" style="margin-left: 10px; font-size: 0.9rem; font-weight: 600;"></span>
 </div>
-
 <div class="paste-area">
 <h3>Paste CRM Data</h3>
-<p style="font-size:0.85rem;color:var(--muted); margin-bottom:12px;">Paste your CRM export below. Supports tab-separated tables, line-per-field blocks, and simple lines. Both <strong>SA...</strong> and <strong>3P...</strong> record IDs are supported.</p>
-<textarea id="pasteBox" placeholder="SA99109&#10;Stephen Bishop&#10;...&#10;0kW + 25.6kW&#10;..."></textarea>
+<p style="font-size:0.85rem;color:var(--muted); margin-bottom:12px;">Paste your CRM export below. Supports tab-separated tables, line-per-field blocks, and simple lines. Both <strong>SA...</strong> and <strong>3P...</strong> record IDs are supported. Active Date is auto-detected for Dead Stock eligibility (≥ 27-May-2026).</p>
+<textarea id="pasteBox" placeholder="SA99109&#10;Stephen Bishop&#10;20-Aug-2026&#10;...&#10;0kW + 25.6kW&#10;..."></textarea>
 <div class="paste-actions">
 <button class="btn btn-primary" onclick="parsePaste()">
 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -482,7 +459,6 @@ Parse &amp; Import
 </div>
 </div>
 </div>
-
 <div class="tab-panel" id="tab-reports">
 <div class="card" style="margin-bottom:16px;">
 <div class="card-header">
@@ -504,7 +480,6 @@ Parse &amp; Import
 </div>
 </div>
 </main>
-
 <script>
 /* ========== STATE ========== */
 let products = [
@@ -517,67 +492,30 @@ let entries = [];
 let rowId = 0;
 let slabChart = null, mixChart = null;
 let panelMixChart = null, inverterMixChart = null, batteryMixChart = null;
-
-// DEAD STOCK CUTOFF: May 27, 2026
-const CUTOFF_Y = 2026;
-const CUTOFF_M = 5; // May
-const CUTOFF_D = 27;
-
-/* ========== DATE ENGINE (Timezone-Safe) ========== */
-function parseSafeDate(str) {
-    if (!str) return null;
-    // Matches 20-Aug-2026 or 20/08/2026
-    const m = str.match(/(\d{1,2})[-\/](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-\/](\d{4})/i);
-    if (m) {
-        const months = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
-        return { y: parseInt(m[3]), m: months[m[2].toLowerCase()], d: parseInt(m[1]) };
-    }
-    // Fallback for DD/MM/YYYY
-    const parts = str.split(/[-\/]/);
-    if (parts.length === 3 && parts[2].length === 4) {
-        const d = parseInt(parts[0]), mo = parseInt(parts[1]), y = parseInt(parts[2]);
-        if (!isNaN(d) && !isNaN(mo) && !isNaN(y)) return { y, m: mo, d };
-    }
-    return null;
-}
-
-function isEligible(dateObj) {
-    if (!dateObj) return true; // FIX: If no date found, assume ELIGIBLE (default to today's logic)
-    if (dateObj.y > CUTOFF_Y) return true;
-    if (dateObj.y < CUTOFF_Y) return false;
-    if (dateObj.m > CUTOFF_M) return true;
-    if (dateObj.m < CUTOFF_M) return false;
-    return dateObj.d >= CUTOFF_D;
-}
-
-function formatDateDisplay(obj) {
-    if (!obj) return 'No Date';
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${String(obj.d).padStart(2,'0')}-${months[obj.m-1]}-${obj.y}`;
-}
-
+// BUG FIX #1: Use string constant for timezone-safe comparison
+// "2026-05-27" as a string compares correctly regardless of browser timezone
+const DEAD_STOCK_CUTOFF_STR = '2026-05-27';
 /* ========== RESET DASHBOARD ========== */
 function resetDashboard() {
-    if (confirm("⚠️ Are you sure you want to reset the dashboard?")) {
+    if (confirm("⚠️ Are you sure you want to reset the dashboard?\n\nThis will:\n- Clear all entered sales data and custom products\n- Clear cookies for this site\n- Force a hard refresh to clear the browser cache\n\nThis action cannot be undone.")) {
         document.cookie.split(";").forEach(function(c) { 
             document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/"); 
         });
-        try { localStorage.clear(); sessionStorage.clear(); } catch(e) {}
-        [slabChart, mixChart, panelMixChart, inverterMixChart, batteryMixChart].forEach(c => { if(c) c.destroy(); });
-        window.location.reload();
+        try { localStorage.clear(); sessionStorage.clear(); } catch(e) { /* ignore */ }
+        const url = new URL(window.location.href);
+        url.searchParams.set('nocache', Date.now().toString());
+        window.location.replace(url.toString());
     }
 }
-
 /* ========== TAB SWITCHING ========== */
 function switchTab(tabName){
-    document.querySelectorAll('.tab-btn').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.nav === tabName));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabName));
+    document.querySelectorAll('.tab-btn').forEach(t => { t.classList.toggle('active', t.dataset.tab === tabName); });
+    document.querySelectorAll('.nav-item').forEach(n => { n.classList.toggle('active', n.dataset.nav === tabName); });
+    document.querySelectorAll('.tab-panel').forEach(p => { p.classList.toggle('active', p.id === 'tab-' + tabName); });
     document.querySelector('.sidebar').classList.remove('open');
 }
-document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
-document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => switchTab(item.dataset.nav)));
-
+document.querySelectorAll('.tab-btn').forEach(btn => { btn.addEventListener('click', () => switchTab(btn.dataset.tab)); });
+document.querySelectorAll('.nav-item').forEach(item => { item.addEventListener('click', () => switchTab(item.dataset.nav)); });
 /* ========== PRODUCTS ========== */
 function renderProducts(){
     const el = document.getElementById('productList');
@@ -615,10 +553,14 @@ function refreshProductDropdowns(){
         sel.appendChild(opt);
     });
 }
-
 /* ========== ENTRIES ========== */
-function addRow(kw, product, project, name, status, dateObj){
+// BUG FIX #1 (cont.): saleDate stored as "YYYY-MM-DD" string, never converted through Date object
+function addRow(kw, product, project, name, status, saleDate){
     const id = rowId++;
+    const today = new Date();
+    const todayStr = today.getFullYear() + '-' + 
+        String(today.getMonth()+1).padStart(2,'0') + '-' + 
+        String(today.getDate()).padStart(2,'0');
     entries.push({
         id, 
         project: project || `SA${Math.floor(10000 + Math.random() * 90000)}`, 
@@ -626,7 +568,7 @@ function addRow(kw, product, project, name, status, dateObj){
         status: status || 'Active',
         product: product || products[0]?.name || 'Standard', 
         kw: kw || 0,
-        saleDate: dateObj
+        saleDate: saleDate || todayStr
     });
     renderRows(); calculate(); updateActivity();
 }
@@ -634,8 +576,13 @@ function removeRow(id){
     entries = entries.filter(e => e.id !== id);
     renderRows(); calculate(); updateActivity();
 }
-function removeEntriesForProject(projectId){
-    entries = entries.filter(e => e.project !== projectId);
+// BUG FIX #3: Content-aware deduplication instead of blind project-ID deletion
+function isDuplicateEntry(projectId, kw, productName) {
+    return entries.some(e => 
+        e.project === projectId && 
+        Math.abs(parseFloat(e.kw) - kw) < 0.01 && 
+        e.product.toLowerCase() === productName.toLowerCase()
+    );
 }
 function renderRows(){
     const body = document.getElementById('entryBody');
@@ -649,12 +596,10 @@ function renderRows(){
         if(search && !((e.product && e.product.toLowerCase().includes(search)) || (e.project && e.project.toLowerCase().includes(search)) || (e.name && e.name.toLowerCase().includes(search)))) return false;
         return true;
     });
-
     if(filtered.length === 0){
-        body.innerHTML = '<tr><td colspan="6"><div class="empty-state"><h4>No entries found</h4></div></td></tr>';
+        body.innerHTML = '<tr><td colspan="6"><div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h4>No entries found</h4><p>Add your first sale or import data to get started.</p></div></td></tr>';
         return;
     }
-
     body.innerHTML = '';
     filtered.forEach(e => {
         const prod = products.find(p => p.name.toLowerCase() === e.product.toLowerCase());
@@ -663,7 +608,6 @@ function renderRows(){
         let statusColor = 'var(--primary)';
         if(e.status === 'Complete') statusColor = 'var(--success)';
         if(e.status === 'Close') statusColor = 'var(--error)';
-
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><div style="font-weight:700; color:var(--text);">${e.project || '-'}</div><div style="font-size:0.75rem; color:var(--muted);">${e.name || '-'}</div></td>
@@ -671,7 +615,7 @@ function renderRows(){
             <td><span class="status-badge ${type}"><span class="dot"></span>${type==='dead'?'Dead Stock':'Standard'}</span></td>
             <td class="kw-cell">${kw.toFixed(2)} kW</td>
             <td><span style="color:${statusColor}; font-size:0.82rem; font-weight:700;">${e.status || 'Active'}</span></td>
-            <td><div class="row-actions"><button class="delete" onclick="removeRow(${e.id})" title="Delete">✕</button></div></td>
+            <td><div class="row-actions"><button class="delete" onclick="removeRow(${e.id})" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></td>
         `;
         body.appendChild(tr);
     });
@@ -697,7 +641,6 @@ document.querySelectorAll('.filter-chip').forEach(c => {
     });
 });
 function handleSearchInput() { renderRows(); }
-
 /* ========== CALCULATION ========== */
 function sunboostCalc(totalKw){
     const kw = Math.max(0, totalKw);
@@ -723,7 +666,6 @@ function sunboostCalc(totalKw){
     if(kw <= 0){ base = 0; bonus = 0; rows.forEach(r => {r.kw = 0; r.amt = 0;}); }
     return {base, bonus, total: base + bonus, rows, kw};
 }
-
 function deadStockCalc(deadKw){
     const kw = Math.max(0, deadKw);
     const slabs = [
@@ -742,53 +684,45 @@ function deadStockCalc(deadKw){
     return {total, rows, kw};
 }
 function inr(n){ return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-
 function calculate(){
     let totalKw = 0, deadKw = 0;
-    
     entries.forEach(e => {
         const v = parseFloat(e.kw);
-        if(isNaN(v) || v <= 0) return;
-
-        totalKw += v;
-
-        const prod = products.find(p => p.name.trim().toLowerCase() === e.product.trim().toLowerCase());
-        if(prod && prod.type === 'dead') {
-            // STRICT CHECK: Only count if date is on or after May 27, 2026
-            if(isEligible(e.saleDate)) {
-                deadKw += v;
+        if(!isNaN(v) && v > 0){
+            totalKw += v;
+            const prod = products.find(p => p.name.trim().toLowerCase() === e.product.trim().toLowerCase());
+            if(prod && prod.type === 'dead') {
+                // BUG FIX #1 (cont.): String comparison is timezone-safe
+                // "2026-05-27" >= "2026-05-27" → true
+                // "2026-05-08" >= "2026-05-27" → false
+                if(e.saleDate >= DEAD_STOCK_CUTOFF_STR) {
+                    deadKw += v;
+                }
             }
         }
     });
-
     totalKw = Math.round(totalKw * 100) / 100;
     deadKw = Math.round(deadKw * 100) / 100;
-
     const sun = sunboostCalc(totalKw);
     const dead = deadStockCalc(deadKw);
     const combo = sun.total + dead.total;
-
     document.getElementById('kpiTotalKw').textContent = totalKw.toFixed(2) + ' kW';
     document.getElementById('kpiSunAmt').textContent = inr(sun.total);
     document.getElementById('kpiSunSub').textContent = `${totalKw.toFixed(2)} kW · Base ${inr(sun.base)} + bonus ${inr(sun.bonus)}`;
     document.getElementById('kpiDeadAmt').textContent = inr(dead.total);
-    document.getElementById('kpiDeadSub').textContent = `${deadKw.toFixed(2)} kW dead stock (Post-May 27)`;
+    document.getElementById('kpiDeadSub').textContent = `${deadKw.toFixed(2)} kW dead stock (≥ 27-May-2026)`;
     document.getElementById('kpiComboAmt').textContent = inr(combo);
     document.getElementById('kpiComboSub').textContent = `${totalKw.toFixed(2)} kW total (${deadKw.toFixed(2)} kW eligible dead stock)`;
-
     const sb = document.getElementById('sunBreakdown');
     sb.innerHTML = sun.rows.map(r => `<tr class="${r.kw > 0 ? 'current':''}"><td>${r.label}</td><td>${r.rate}</td><td>${r.kw.toFixed(2)}</td><td class="slab-amount">${inr(r.amt)}</td></tr>`).join('');
     document.getElementById('sunBonusLine').textContent = `Applied bonus (single highest): ${inr(sun.bonus)}`;
-
     const db = document.getElementById('deadBreakdown');
     db.innerHTML = dead.rows.map(r => `<tr class="${r.kw > 0 ? 'current':''}"><td>${r.label}</td><td>${r.rate}</td><td>${r.kw.toFixed(2)}</td><td class="slab-amount">${inr(r.amt)}</td></tr>`).join('');
-
     updateCharts(sun, dead);
     updateCategoryCharts();
     updateProgress(totalKw);
 }
-
-/* ========== CHARTS & ACTIVITY ========== */
+/* ========== CHARTS ========== */
 function updateCharts(sun, dead) {
     if(typeof Chart === 'undefined') return;
     try {
@@ -804,11 +738,10 @@ function updateCharts(sun, dead) {
                 slabChart = new Chart(ctx.getContext('2d'), {
                     type:'bar',
                     data:{ labels: slabLabels, datasets:[{ label: 'Amount (₹)', data: slabData, backgroundColor: ['#0176D3','#1B96FF','#45BFFF', '#2E844A', '#9050E9','#FE9339'], borderRadius:6, borderSkipped:false }] },
-                    options:{ responsive:true, maintainAspectRatio:false, plugins: {legend: {display:false}}, scales:{x:{grid:{display:false}},y:{grid:{color: '#F3F3F3'}}} }
+                    options:{ responsive:true, maintainAspectRatio:false, plugins: {legend: {display:false}, tooltip: {backgroundColor: '#032D60', padding:12, cornerRadius:6, callbacks: {label: ctx=>'₹'+ctx.parsed.y.toLocaleString('en-IN')}}}, scales:{x:{grid:{display:false}, ticks: {font:{size:11, weight:'600'}}},y:{grid:{color: '#F3F3F3'}, ticks: {callback:v=>'₹'+v.toLocaleString('en-IN'), font: {size:11}}}} }
                 });
             }
         }
-
         let deadTotal = 0, stdTotal = 0;
         entries.forEach(e => {
             const v = parseFloat(e.kw) || 0;
@@ -825,13 +758,13 @@ function updateCharts(sun, dead) {
                 mixChart = new Chart(ctx2.getContext('2d'), {
                     type: 'doughnut',
                     data:{ labels: ['Standard', 'Dead Stock'], datasets:[{data:mixData, backgroundColor: ['#0176D3','#9050E9'], borderWidth:0, cutout:'70%'}] },
-                    options:{ responsive:true, maintainAspectRatio:false, plugins: {legend: {position:'bottom'}} }
+                    options:{ responsive:true, maintainAspectRatio:false, plugins: {legend: {position:'bottom', labels: {padding:16, font: {size:12, weight:'600'}}}, tooltip: {backgroundColor: '#032D60', padding: 12, cornerRadius:6, callbacks: {label:ctx=> `${ctx.label}: ${ctx.parsed.toFixed(2)} kW`}}} }
                 });
             }
         }
     } catch(err){ console.warn('Chart error:', err); }
 }
-
+/* ========== CATEGORY MIX CHARTS ========== */
 function classifyProduct(name){
     if(/^JAM/i.test(name)) return {brand:'JA Solar', category:'panel'};
     if(/^JKM/i.test(name)) return {brand:'Jinko', category:'panel'};
@@ -859,7 +792,6 @@ function classifyProduct(name){
     if(/KWH|\bBAT\b|SH-HM/i.test(name)) return {brand:'Other', category:'battery'};
     return {brand: (name.split(/[\s\-]/)[0] || 'Other'), category:'inverter'};
 }
-
 function computeCategoryMix(category){
     const byBrand = {};
     let total = 0;
@@ -876,13 +808,12 @@ function computeCategoryMix(category){
     if(pairs.length > MAX_SLICES){
         const head = pairs.slice(0, MAX_SLICES);
         const tailTotal = pairs.slice(MAX_SLICES).reduce((sum,p) => sum + p[1], 0);
-        pairs = [...head, [`Other`, tailTotal]];
+        pairs = [...head, [`Other (${pairs.length - MAX_SLICES} brands)`, tailTotal]];
     }
     return { labels: pairs.map(p=>p[0]), data: pairs.map(p=>p[1]), total };
 }
-
 const CATEGORY_PALETTE = ['#0176D3','#1B96FF','#45BFFF','#9050E9','#C29DF2','#2E844A','#6BC490','#FE9339','#FFC078','#B85C00','#0B8ECC','#706E6B'];
-
+// BUG FIX #5: Tooltip percentage calculated from live dataset, not stale closure
 function renderCategoryChart(canvasId, chartVarSetter, chartVarGetter, category, emptyLabel){
     const mix = computeCategoryMix(category);
     const ctx = document.getElementById(canvasId);
@@ -891,7 +822,6 @@ function renderCategoryChart(canvasId, chartVarSetter, chartVarGetter, category,
     const labels = hasData ? mix.labels : [emptyLabel];
     const data = hasData ? mix.data : [1];
     const colors = hasData ? CATEGORY_PALETTE : ['#E5E5E5'];
-
     let chart = chartVarGetter();
     if(chart){
         chart.data.labels = labels;
@@ -902,19 +832,60 @@ function renderCategoryChart(canvasId, chartVarSetter, chartVarGetter, category,
         chart = new Chart(ctx.getContext('2d'), {
             type: 'doughnut',
             data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, cutout: '65%' }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 10, font: { size: 10, weight: '600' }, boxWidth: 10,
+                            generateLabels: (chart) => {
+                                const ds = chart.data.datasets[0];
+                                const dataArr = ds.data;
+                                const lbls = chart.data.labels;
+                                const isEmpty = lbls.length === 1 && lbls[0] === emptyLabel;
+                                const grandTotal = dataArr.reduce((a,b)=>a+b, 0);
+                                return lbls.map((label, i) => {
+                                    if(isEmpty) return { text: label, fillStyle: ds.backgroundColor[i], strokeStyle: ds.backgroundColor[i], index: i };
+                                    const value = dataArr[i];
+                                    const pct = grandTotal > 0 ? (value / grandTotal * 100).toFixed(1) : '0.0';
+                                    return {
+                                        text: `${label} — ${value.toFixed(2)} kW (${pct}%)`,
+                                        fillStyle: ds.backgroundColor[i],
+                                        strokeStyle: ds.backgroundColor[i],
+                                        index: i
+                                    };
+                                });
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#032D60', padding: 12, cornerRadius: 6,
+                        callbacks: {
+                            label: (c) => {
+                                if(!hasData) return 'No sales yet';
+                                // BUG FIX #5: Calculate total from current dataset
+                                const currentTotal = c.dataset.data.reduce((a,b)=>a+b, 0);
+                                const pct = currentTotal > 0 ? (c.parsed / currentTotal * 100).toFixed(1) : '0.0';
+                                return `${c.label}: ${c.parsed.toFixed(2)} kW (${pct}%)`;
+                            }
+                        }
+                    }
+                }
+            }
         });
         chartVarSetter(chart);
     }
 }
-
 function updateCategoryCharts(){
     if(typeof Chart === 'undefined') return;
-    renderCategoryChart('panelMixChart', (c)=>panelMixChart=c, ()=>panelMixChart, 'panel', 'No panels yet');
-    renderCategoryChart('inverterMixChart', (c)=>inverterMixChart=c, ()=>inverterMixChart, 'inverter', 'No inverters yet');
-    renderCategoryChart('batteryMixChart', (c)=>batteryMixChart=c, ()=>batteryMixChart, 'battery', 'No batteries yet');
+    try {
+        renderCategoryChart('panelMixChart', (c)=>panelMixChart=c, ()=>panelMixChart, 'panel', 'No panels yet');
+        renderCategoryChart('inverterMixChart', (c)=>inverterMixChart=c, ()=>inverterMixChart, 'inverter', 'No inverters yet');
+        renderCategoryChart('batteryMixChart', (c)=>batteryMixChart=c, ()=>batteryMixChart, 'battery', 'No batteries yet');
+    } catch(err){ console.warn('Category chart error:', err); }
 }
-
+/* ========== PROGRESS ========== */
 function updateProgress(totalKw){
     const tiers = [
         {label: 'Next: ₹25,000 bonus', target:1000, color:''},
@@ -928,11 +899,11 @@ function updateProgress(totalKw){
         return `<div class="progress-item"><div class="progress-header"><span class="progress-label">${reached?'✔ ':''}${t.label}</span><span class="progress-value">${totalKw.toFixed(2)} / ${t.target} kW (${pct.toFixed(1)}%)</span></div><div class="progress-bar"><div class="progress-fill ${t.color}" style="width:${pct}%;"></div></div></div>`;
     }).join('');
 }
-
+/* ========== ACTIVITY ========== */
 function updateActivity(){
     const list = document.getElementById('activityList');
     if(entries.length === 0){
-        list.innerHTML = '<div class="empty-state" style="padding:24px;"><p>No activity yet.</p></div>';
+        list.innerHTML = '<div class="empty-state" style="padding:24px;"><p>No activity yet. Import sales to get started.</p></div>';
         return;
     }
     const recent = entries.slice(-5).reverse();
@@ -940,18 +911,32 @@ function updateActivity(){
         const prod = products.find(p => p.name.toLowerCase() === e.product.toLowerCase());
         const type = prod ? prod.type : 'std';
         const iconClass = type === 'dead' ? 'purple' : 'blue';
-        return `<div class="activity-item fade-in"><div class="activity-icon ${iconClass}">📦</div><div class="activity-content"><div class="activity-title">Added <strong>${e.project || 'Project'}</strong> - ${parseFloat(e.kw).toFixed(2)} kW</div><div class="activity-meta">${type==='dead'?'Dead Stock':'Standard'} • ${formatDateDisplay(e.saleDate)}</div></div></div>`;
+        return `<div class="activity-item fade-in"><div class="activity-icon ${iconClass}">📦</div><div class="activity-content"><div class="activity-title">Added <strong>${e.project || 'Project'} (${e.name || 'Customer'})</strong> - ${parseFloat(e.kw).toFixed(2)} kW</div><div class="activity-meta">${type==='dead'?'Dead Stock':'Standard'} • ${e.saleDate} • Status: ${e.status || 'Active'}</div></div></div>`;
     }).join('');
 }
-
 /* ========== PASTE & FILE UPLOAD PARSER ========== */
 const DEAD_BRAND_RX = /ESY|SMILE|FORCE-H|SIH-|SIEB|PYLON|ALPHA|SWATTEN/i;
 const BATTERY_HINT_RX = /KWH|\bBAT\b|\bEC\s?\d|SH-HM|SMILE|FORCE-H|SIH-|SIEB/i;
 const PANEL_HINT_RX = /JAM|SPDG|IEC\s?61215|LR|PANEL/i;
 const RECORD_ID_RX = /^[A-Za-z0-9]{1,4}\d{3,}$/;
+const PRODUCT_CELL_RX = /^\d+[A-Za-z][A-Za-z0-9\-\/]{2,}/;
 const KW_LINE_RX = /^(\d+(?:\.\d+)?)\s*kW\s*\+\s*(\d+(?:\.\d+)?)\s*kW$/i;
 const DATE_LINE_RX = /\d{1,2}[-\/](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-\/]\d{4}/i;
-
+// BUG FIX #1 (cont.): Returns "YYYY-MM-DD" string directly, no Date object conversion
+function parseDate(dateStr) {
+    if (!dateStr) return null;
+    const match = dateStr.match(/(\d{1,2})[-\/](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-\/](\d{4})/i);
+    if (match) {
+        const months = {jan:'01', feb:'02', mar:'03', apr:'04', may:'05', jun:'06', jul:'07', aug:'08', sep:'09', oct:'10', nov:'11', dec:'12'};
+        const day = String(parseInt(match[1])).padStart(2,'0');
+        const month = months[match[2].toLowerCase().substring(0,3)];
+        const year = parseInt(match[3]);
+        if (day && month && !isNaN(year)) {
+            return `${year}-${month}-${day}`;
+        }
+    }
+    return null;
+}
 function parseCRMTable(lines){
     const hasTabs = lines.some(l => l.includes('\t'));
     if(!hasTabs) return null;
@@ -962,11 +947,11 @@ function parseCRMTable(lines){
         const first = fields[0];
         if (RECORD_ID_RX.test(first)){
             if(current) records.push(current);
-            current = {id:first, lines: [fields], dateObj: null};
+            current = {id:first, lines: [fields], date: null};
         } else if(current) { 
             current.lines.push(fields); 
             fields.forEach(f => {
-                if(DATE_LINE_RX.test(f)) current.dateObj = parseSafeDate(f);
+                if(DATE_LINE_RX.test(f)) current.date = parseDate(f);
             });
         }
     });
@@ -981,21 +966,21 @@ function parseCRMTable(lines){
                 if(!f) return;
                 const kwm = f.match(KW_LINE_RX);
                 if(kwm){ solarKW = parseFloat(kwm[1]); batteryKW = parseFloat(kwm[2]); return; }
-                if(/^\d+[A-Za-z]/.test(f.trim())) productNames.push(f.trim().replace(/^\d+\s*/, ''));
+                if(PRODUCT_CELL_RX.test(f)) productNames.push(f.replace(/^\d+/, ''));
             });
         });
-        if(solarKW === null || batteryKW === null) return;
+        // BUG FIX #4: Allow 0kW values (null means not found, 0 means explicitly zero)
+        if(solarKW === null && batteryKW === null) return;
         const isDead = productNames.some(p => DEAD_BRAND_RX.test(p));
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
-        results.push({id:rec.id, solarKW, batteryKW, isDead, batteryProd, solarProd, dateObj: rec.dateObj});
+        results.push({id:rec.id, solarKW: solarKW||0, batteryKW: batteryKW||0, isDead, batteryProd, solarProd, date: rec.date});
     });
     return results.length ? results : null;
 }
-
 function parseCRMBlocks(lines){
     const boundaries = [];
-    lines.forEach((l,i) => { if(RECORD_ID_RX.test(l.trim())) boundaries.push(i); });
+    lines.forEach((l,i) => { if(RECORD_ID_RX.test(l)) boundaries.push(i); });
     if(boundaries.length === 0) return null;
     const records = [];
     boundaries.forEach((start,idx) => {
@@ -1007,40 +992,48 @@ function parseCRMBlocks(lines){
         const solarKW = parseFloat(m[1]);
         const batteryKW = parseFloat(m[2]);
         
-        // Scan ENTIRE block for date
-        let saleDateObj = null;
-        for(let i=0; i<block.length; i++) {
-            if(DATE_LINE_RX.test(block[i])) {
-                saleDateObj = parseSafeDate(block[i]);
-                break;
+        // Find date anywhere in the block
+        let saleDate = null;
+        for(let di=0; di<block.length; di++) {
+            if(DATE_LINE_RX.test(block[di])) {
+                saleDate = parseDate(block[di]);
+                if(saleDate) break;
             }
         }
-
+        // BUG FIX #2: Improved product extraction with single-line fallback
         const productNames = [];
         let i = kwIdx - 1;
-        while(i >= 0 && !RECORD_ID_RX.test(block[i].trim())){
+        while(i >= 0 && !RECORD_ID_RX.test(block[i])){
             const line = block[i].trim();
-            if(/^\d+[A-Za-z]/.test(line)) {
-                productNames.unshift(line.replace(/^\d+\s*/, ''));
+            // Check for qty + product on separate lines
+            if(/^\d+$/.test(line) && i-1 >= 0 && !RECORD_ID_RX.test(block[i-1])) {
+                const prodLine = block[i-1].trim();
+                if(prodLine && !DATE_LINE_RX.test(prodLine) && !KW_LINE_RX.test(prodLine)) {
+                    productNames.unshift(prodLine);
+                    i -= 2;
+                    continue;
+                }
+            }
+            // BUG FIX #2: Also capture products on their own line (no separate qty line)
+            if(PRODUCT_CELL_RX.test(line) && !KW_LINE_RX.test(line) && !DATE_LINE_RX.test(line)) {
+                productNames.unshift(line.replace(/^\d+/, ''));
             }
             i--;
         }
         
-        const id = block[0].trim();
+        const id = block[0];
         const isDead = productNames.some(p => DEAD_BRAND_RX.test(p));
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
-        records.push({id, solarKW, batteryKW, isDead, batteryProd, solarProd, dateObj: saleDateObj});
+        records.push({id, solarKW, batteryKW, isDead, batteryProd, solarProd, date: saleDate});
     });
     return records.length ? records : null;
 }
-
 function ensureProduct(name, type){
     let p = products.find(item => item.name.toLowerCase() === name.toLowerCase());
     if(!p){ p = {name, type}; products.push(p); return {p, created:true}; }
     return {p, created:false};
 }
-
 function parseSimpleLines(lines){
     let added = 0, newProducts = 0;
     lines.forEach(line => {
@@ -1048,14 +1041,12 @@ function parseSimpleLines(lines){
         if(!numMatches) return;
         const kw = parseFloat(numMatches[numMatches.length-1]);
         if(isNaN(kw) || kw <= 0) return;
-
         let productText = line;
         productText = productText.replace(new RegExp('\\b'+numMatches[numMatches.length-1].replace('.','\\.')+'\\b'), '');
         productText = productText.replace(/kw|kilowatt|units?|qty/gi, '');
         productText = productText.replace(/\t|,|\|/g, ' ').replace(/\s{2,}/g, ' ').trim();
         productText = productText.replace(/^[-–—:\s]+|[-–—:\s]+$/g, '');
         if(!productText) productText = 'Unspecified';
-
         const res = ensureProduct(productText, 'std');
         if(res.created) newProducts++;
         addRow(kw, res.p.name, null, 'Client', 'Active');
@@ -1063,7 +1054,6 @@ function parseSimpleLines(lines){
     });
     return {added, newProducts};
 }
-
 function parsePaste(){
     const raw = document.getElementById('pasteBox').value;
     const status = document.getElementById('pasteStatus');
@@ -1072,59 +1062,62 @@ function parsePaste(){
     
     const crmRecords = parseCRMTable(lines) || parseCRMBlocks(lines);
     if(crmRecords){
-        let added = 0, newProducts = 0;
+        let added = 0, newProducts = 0, skippedDuplicates = 0;
         crmRecords.forEach(r => {
+            // BUG FIX #3: Content-aware dedup instead of blind project wipe
             if(r.solarKW > 0){
                 const res = ensureProduct(r.solarProd, 'std');
                 if(res.created) newProducts++;
-                addRow(r.solarKW, res.p.name, r.id, 'Client', 'Active', r.dateObj);
-                added++;
+                if(!isDuplicateEntry(r.id, r.solarKW, res.p.name)) {
+                    addRow(r.solarKW, res.p.name, r.id, 'Client', 'Active', r.date);
+                    added++;
+                } else { skippedDuplicates++; }
             }
             if(r.batteryKW > 0){
                 const res = ensureProduct(r.batteryProd, r.isDead? 'dead': 'std');
                 if(res.created) newProducts++;
-                addRow(r.batteryKW, res.p.name, r.id, 'Client', 'Active', r.dateObj);
-                added++;
+                if(!isDuplicateEntry(r.id, r.batteryKW, res.p.name)) {
+                    addRow(r.batteryKW, res.p.name, r.id, 'Client', 'Active', r.date);
+                    added++;
+                } else { skippedDuplicates++; }
             }
         });
         renderProducts(); renderRows(); calculate(); updateActivity();
-        status.textContent = `✔ Recognized ${crmRecords.length} CRM rows → added ${added} sale lines`;
+        let msg = `✔ Recognized ${crmRecords.length} CRM rows → added ${added} sale lines`;
+        if(skippedDuplicates > 0) msg += ` (${skippedDuplicates} duplicates skipped)`;
+        status.textContent = msg;
         status.className = 'paste-status success';
     } else {
         const {added, newProducts} = parseSimpleLines(lines);
         renderProducts(); renderRows(); calculate(); updateActivity();
         if(added > 0){
-            status.textContent = `✔ Added ${added} sale line${added===1?'':'s'}`;
+            status.textContent = `✔ Added ${added} sale line${added===1?'':'s'}` + (newProducts ? `, ${newProducts} new product${newProducts===1?'':'s'} added as Standard — check types in Products tab.` : '.');
             status.className = 'paste-status success';
         } else {
-            status.textContent = 'Could not parse format.';
+            status.textContent = 'Could not parse format. Please check structure.';
             status.className = 'paste-status';
         }
     }
     document.getElementById('pasteBox').value = '';
 }
-
 function parseUploadedRows(rows){
     const records = [];
     rows.forEach(row => {
         if(!Array.isArray(row)) return;
         const cells = row.map(c => (c===null||c===undefined) ? '' : String(c).trim());
         const idCell = cells.find(c => RECORD_ID_RX.test(c));
-        if(!idCell) return; 
-
+        if(!idCell) return;
         const kwIdx = cells.findIndex(c => KW_LINE_RX.test(c));
         if(kwIdx === -1) return;
         const m = cells[kwIdx].match(KW_LINE_RX);
         const solarKW = parseFloat(m[1]);
         const batteryKW = parseFloat(m[2]);
-
         const customerName = cells[1] || 'Unknown';
         
-        let saleDateObj = null;
+        let saleDate = null;
         cells.forEach(c => {
-            if(DATE_LINE_RX.test(c)) saleDateObj = parseSafeDate(c);
+            if(DATE_LINE_RX.test(c)) saleDate = parseDate(c);
         });
-
         const productNames = [];
         for(let i=0; i<cells.length-1; i++){
             const a = cells[i], b = cells[i+1];
@@ -1137,16 +1130,13 @@ function parseUploadedRows(rows){
             if(/^(active|complete|clos(e|ed)|booked|connection)/i.test(b)) continue;
             productNames.push(b);
         }
-
         const isDead = productNames.some(p => DEAD_BRAND_RX.test(p));
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
-
-        records.push({id: idCell, customerName, solarKW, batteryKW, isDead, batteryProd, solarProd, dateObj: saleDateObj});
+        records.push({id: idCell, customerName, solarKW, batteryKW, isDead, batteryProd, solarProd, date: saleDate});
     });
     return records;
 }
-
 function handleFileUpload() {
     const fileInput = document.getElementById('fileUpload');
     const statusLabel = document.getElementById('uploadStatus');
@@ -1159,16 +1149,16 @@ function handleFileUpload() {
     const reader = new FileReader();
     statusLabel.style.color = "var(--text)";
     statusLabel.innerText = "Reading file...";
-
     reader.onload = function(e) {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
             let rows = [];
+            let sheetsWithData = 0;
             workbook.SheetNames.forEach(name => {
                 const worksheet = workbook.Sheets[name];
                 const sheetRows = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
-                if(sheetRows.length > 0){ rows = rows.concat(sheetRows); }
+                if(sheetRows.length > 0){ sheetsWithData++; rows = rows.concat(sheetRows); }
             });
             if (rows.length === 0) {
                 statusLabel.style.color = "var(--error)";
@@ -1178,26 +1168,34 @@ function handleFileUpload() {
             const records = parseUploadedRows(rows);
             if (records.length === 0) {
                 statusLabel.style.color = "var(--error)";
-                statusLabel.innerText = "Could not recognize any rows.";
+                statusLabel.innerText = "Could not recognize any rows — expected a Project ID and a \"X kW + Y kW\" cell.";
                 return;
             }
-            let added = 0, newProducts = 0;
+            let added = 0, newProducts = 0, skippedDuplicates = 0;
             records.forEach(r => {
+                // BUG FIX #3: Content-aware dedup for file uploads too
                 if(r.solarKW > 0){
                     const res = ensureProduct(r.solarProd, 'std');
                     if(res.created) newProducts++;
-                    addRow(r.solarKW, res.p.name, r.id, r.customerName, 'Active', r.dateObj);
-                    added++;
+                    if(!isDuplicateEntry(r.id, r.solarKW, res.p.name)) {
+                        addRow(r.solarKW, res.p.name, r.id, r.customerName, 'Active', r.date);
+                        added++;
+                    } else { skippedDuplicates++; }
                 }
                 if(r.batteryKW > 0){
                     const res = ensureProduct(r.batteryProd, r.isDead ? 'dead' : 'std');
                     if(res.created) newProducts++;
-                    addRow(r.batteryKW, res.p.name, r.id, r.customerName, 'Active', r.dateObj);
-                    added++;
+                    if(!isDuplicateEntry(r.id, r.batteryKW, res.p.name)) {
+                        addRow(r.batteryKW, res.p.name, r.id, r.customerName, 'Active', r.date);
+                        added++;
+                    } else { skippedDuplicates++; }
                 }
             });
             statusLabel.style.color = "var(--success)";
-            statusLabel.innerText = `Success! Recognized ${records.length} rows → added ${added} sale lines.`;
+            let msg = `Success! Read ${sheetsWithData} sheet${sheetsWithData===1?'':'s'}, recognized ${records.length} rows → added ${added} sale lines`;
+            if(newProducts > 0) msg += ` (${newProducts} new products added)`;
+            if(skippedDuplicates > 0) msg += ` (${skippedDuplicates} duplicates skipped)`;
+            statusLabel.innerText = msg + '.';
             fileInput.value = "";
             renderProducts(); renderRows(); calculate(); updateActivity();
         } catch (error) {
@@ -1208,7 +1206,6 @@ function handleFileUpload() {
     };
     reader.readAsArrayBuffer(file);
 }
-
 /* ========== INIT ========== */
 try {
     renderProducts();
