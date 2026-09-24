@@ -389,6 +389,10 @@ Add Entry
 <input type="text" id="newEntryName" placeholder="Customer Name">
 </div>
 <div class="form-group">
+<label>Active Date</label>
+<input type="date" id="newEntryDate" min="2026-05-27">
+</div>
+<div class="form-group">
 <label>Status</label>
 <select id="newEntryStatus">
 <option value="Active">Active</option>
@@ -414,7 +418,7 @@ Add Entry
 <span class="filter-chip" data-filter="std">Standard</span>
 <div class="search-box">
 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-<input type="text" id="tableSearch" placeholder="Search by Project No, Name..." oninput="handleSearchInput()">
+<input type="text" id="tableSearch" placeholder="Search by Project No, Name..." oninput="handleSearchInput();">
 </div>
 </div>
 <div id="salesTableWrap">
@@ -425,7 +429,7 @@ Add Entry
 <th style="width:28%">Product</th>
 <th style="width:15%">Type</th>
 <th style="width:15%">kW Sold</th>
-<th style="width:12%">Status</th>
+<th style="width:12%">Active Date</th>
 <th style="width:8%"></th>
 </tr>
 </thead>
@@ -462,7 +466,7 @@ Add Entry
 <div class="tab-panel" id="tab-import">
 <div class="paste-area" style="margin-bottom: 16px;">
 <h3>Upload CSV or Excel File</h3>
-<p style="font-size:0.85rem; color:var(--muted); margin-bottom:12px;">Import raw data spreadsheets directly (Columns can include: Project, Name, Product, kW, Status).</p>
+<p style="font-size:0.85rem; color:var(--muted); margin-bottom:12px;">Import raw data spreadsheets directly (Columns can include: Project, Name, Product, kW, Status, Active Date).</p>
 <input type="file" id="fileUpload" accept=".csv, .xlsx, .xls" style="margin-bottom: 12px; display: block;" />
 <button class="btn btn-primary" onclick="handleFileUpload()">Upload File</button>
 <span id="uploadStatus" style="margin-left: 10px; font-size: 0.9rem; font-weight: 600;"></span>
@@ -504,6 +508,7 @@ Parse &amp; Import
 </div>
 </div>
 </main>
+
 <script>
 /* ========== STATE ========== */
 let products = [
@@ -517,18 +522,19 @@ let rowId = 0;
 let slabChart = null, mixChart = null;
 let panelMixChart = null, inverterMixChart = null, batteryMixChart = null;
 
-// The cutoff date for Dead Stock incentives (May 27, 2026)
-// Using local timezone constructor to avoid UTC offset issues
-const DEAD_STOCK_CUTOFF = new Date(2026, 4, 27); 
-
 /* ========== RESET DASHBOARD ========== */
 function resetDashboard() {
-    if (confirm("⚠️ Are you sure you want to reset the dashboard?")) {
-        document.cookie.split(";").forEach(function(c) { 
+    if (confirm("⚠️ Are you sure you want to reset the dashboard?\n\nThis will:\n- Clear all entered sales data and custom products\n- Clear cookies for this site\n- Force a hard refresh to clear the browser cache\n\nThis action cannot be undone.")) {
+        document.cookie.split(";").forEach(function(c) {
             document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/"); 
         });
-        try { localStorage.clear(); sessionStorage.clear(); } catch(e) { /* ignore */ }
-        window.location.reload();
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+        } catch(e) { /* ignore */ }
+        const url = new URL(window.location.href);
+        url.searchParams.set('nocache', Date.now().toString());
+        window.location.replace(url.toString());
     }
 }
 
@@ -581,31 +587,37 @@ function refreshProductDropdowns(){
 }
 
 /* ========== ENTRIES ========== */
-function addRow(kw, product, project, name, status, saleDate){
+function addRow(kw, product, project, name, status, activeDate){
     const id = rowId++;
     entries.push({
-        id, 
-        project: project || `SA${Math.floor(10000 + Math.random() * 90000)}`, 
-        name: name || 'Customer', 
+        id,
+        project: project || `SA${Math.floor(10000 + Math.random() * 90000)}`,
+        name: name || 'Customer',
         status: status || 'Active',
-        product: product || products[0]?.name || 'Standard', 
+        product: product || products[0]?.name || 'Standard',
         kw: kw || 0,
-        saleDate: saleDate || new Date().toISOString().split('T')[0]
+        activeDate: activeDate || '2026-05-27' // Default to May 27, 2026 if not provided
     });
     renderRows(); calculate(); updateActivity();
 }
+
 function removeRow(id){
     entries = entries.filter(e => e.id !== id);
     renderRows(); calculate(); updateActivity();
 }
+
+// Removes any existing entries for a project ID. Used so re-pasting/re-uploading the
+// same project (accidentally twice, or as a corrected re-export) replaces its old
+// entries instead of adding duplicates on top of them.
 function removeEntriesForProject(projectId){
     entries = entries.filter(e => e.project !== projectId);
 }
+
 function renderRows(){
     const body = document.getElementById('entryBody');
     const search = (document.getElementById('tableSearch').value || '').toLowerCase();
     const filter = document.querySelector('.filter-chip.active')?.dataset.filter || 'all';
-    
+
     const filtered = entries.filter(e => {
         const prod = products.find(p => p.name.toLowerCase() === e.product.toLowerCase());
         const type = prod ? prod.type : 'std';
@@ -615,7 +627,7 @@ function renderRows(){
     });
 
     if(filtered.length === 0){
-        body.innerHTML = '<tr><td colspan="6"><div class="empty-state"><h4>No entries found</h4></div></td></tr>';
+        body.innerHTML = '<tr><td colspan="6"><div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h4>No entries found</h4><p>Add your first sale or import data to get started.</p></div></td></tr>';
         return;
     }
 
@@ -624,6 +636,9 @@ function renderRows(){
         const prod = products.find(p => p.name.toLowerCase() === e.product.toLowerCase());
         const type = prod ? prod.type : 'std';
         const kw = parseFloat(e.kw) || 0;
+        const activeDate = new Date(e.activeDate);
+        const isAfterMay27 = activeDate >= new Date('2026-05-27');
+
         let statusColor = 'var(--primary)';
         if(e.status === 'Complete') statusColor = 'var(--success)';
         if(e.status === 'Close') statusColor = 'var(--error)';
@@ -634,25 +649,29 @@ function renderRows(){
             <td><div class="product-cell"><span class="product-dot ${type}"></span><div><div class="product-name">${e.product}</div><div class="product-type">${type==='dead'?'Dead Stock eligible':'Standard product'}</div></div></div></td>
             <td><span class="status-badge ${type}"><span class="dot"></span>${type==='dead'?'Dead Stock':'Standard'}</span></td>
             <td class="kw-cell">${kw.toFixed(2)} kW</td>
-            <td><span style="color:${statusColor}; font-size:0.82rem; font-weight:700;">${e.status || 'Active'}</span></td>
-            <td><div class="row-actions"><button class="delete" onclick="removeRow(${e.id})" title="Delete">✕</button></div></td>
+            <td>${e.activeDate}</td>
+            <td><div class="row-actions"><button class="delete" onclick="removeRow(${e.id})" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></td>
         `;
         body.appendChild(tr);
     });
 }
-function addEntryFromForm(){
+
+function addEntryFromForm() {
     const project = document.getElementById('newEntryProject').value.trim();
     const name = document.getElementById('newEntryName').value.trim();
+    const activeDate = document.getElementById('newEntryDate').value || '2026-05-27';
     const status = document.getElementById('newEntryStatus').value;
     const product = document.getElementById('newEntryProduct').value;
     const kw = document.getElementById('newEntryKw').value;
-    if(!kw || parseFloat(kw) <= 0){ alert('Please enter a valid kW value'); return; }
-    addRow(parseFloat(kw), product, project, name, status);
+    if(!kw || parseFloat(kw) <= 0) { alert('Please enter a valid kW value'); return; }
+    addRow(parseFloat(kw), product, project, name, status, activeDate);
     document.getElementById('newEntryProject').value = '';
     document.getElementById('newEntryName').value = '';
     document.getElementById('newEntryKw').value = '';
+    document.getElementById('newEntryDate').value = '';
     document.getElementById('addEntryForm').classList.remove('show');
 }
+
 document.querySelectorAll('.filter-chip').forEach(c => {
     c.addEventListener('click', () => {
         document.querySelectorAll('.filter-chip').forEach(x => x.classList.remove('active'));
@@ -660,10 +679,13 @@ document.querySelectorAll('.filter-chip').forEach(c => {
         renderRows();
     });
 });
-function handleSearchInput() { renderRows(); }
+
+function handleSearchInput() {
+    renderRows();
+}
 
 /* ========== CALCULATION ========== */
-function sunboostCalc(totalKw){
+function sunboostCalc(totalKw) {
     const kw = Math.max(0, totalKw);
     const slabs = [
         {label:'0-250', rate:275, from:0, to:250},
@@ -684,11 +706,11 @@ function sunboostCalc(totalKw){
     if(kw > 2000) bonus = 100000;
     else if(kw > 1500) bonus = 50000;
     else if(kw > 1000) bonus = 25000;
-    if(kw <= 0){ base = 0; bonus = 0; rows.forEach(r => {r.kw = 0; r.amt = 0;}); }
+    if(kw <= 0) { base = 0; bonus = 0; rows.forEach(r => {r.kw = 0; r.amt = 0;}); }
     return {base, bonus, total: base + bonus, rows, kw};
 }
 
-function deadStockCalc(deadKw){
+function deadStockCalc(deadKw, isAfterMay27) {
     const kw = Math.max(0, deadKw);
     const slabs = [
         {label:'0-100', rate:125, from:0, to:100},
@@ -696,6 +718,12 @@ function deadStockCalc(deadKw){
         {label:'201-300', rate:175, from:200, to:300},
         {label:'Above 300', rate:200, from:300, to:Infinity}
     ];
+
+    // Only calculate dead stock if the sale is on or after May 27, 2026
+    if (!isAfterMay27) {
+        return {total: 0, rows: [], kw: 0};
+    }
+
     let total = 0;
     const rows = slabs.map(s => {
         const inSlab = s.to === Infinity ? Math.max(0, kw - s.from) : Math.max(0, Math.min(kw, s.to) - s.from);
@@ -705,56 +733,62 @@ function deadStockCalc(deadKw){
     });
     return {total, rows, kw};
 }
-function inr(n){ return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-function calculate(){
+function inr(n) { return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+function calculate() {
     let totalKw = 0, deadKw = 0;
-    
+    let isAfterMay27 = true;
+
     entries.forEach(e => {
         const v = parseFloat(e.kw);
-        if(isNaN(v) || v <= 0) return;
+        if(!isNaN(v) && v > 0) {
+            totalKw += v;
 
-        totalKw += v;
+            const prod = products.find(p => p.name.trim().toLowerCase() === e.product.trim().toLowerCase());
+            const isDead = prod ? prod.type === 'dead' : false;
+            const activeDate = new Date(e.activeDate);
+            const isAfterMay27ForThisEntry = activeDate >= new Date('2026-05-27');
 
-        const prod = products.find(p => p.name.trim().toLowerCase() === e.product.trim().toLowerCase());
-        if(prod && prod.type === 'dead') {
-            // Check the date constraint for Dead Stock
-            const entryDate = new Date(e.saleDate);
-            // Only count if the sale date is on or after May 27, 2026
-            if(entryDate >= DEAD_STOCK_CUTOFF) {
+            if (isDead && isAfterMay27ForThisEntry) {
                 deadKw += v;
             }
         }
     });
 
+    // Round away floating-point summation drift (e.g. 0.1 + 0.2 !== 0.3 in JS) before slab math,
+    // otherwise totals can land a cent or two off a slab boundary and silently under/over-pay.
     totalKw = Math.round(totalKw * 100) / 100;
     deadKw = Math.round(deadKw * 100) / 100;
 
     const sun = sunboostCalc(totalKw);
-    const dead = deadStockCalc(deadKw);
-    const combo = sun.total + dead.total;
+    const dead = deadStockCalc(deadKw, isAfterMay27);
 
     document.getElementById('kpiTotalKw').textContent = totalKw.toFixed(2) + ' kW';
     document.getElementById('kpiSunAmt').textContent = inr(sun.total);
     document.getElementById('kpiSunSub').textContent = `${totalKw.toFixed(2)} kW · Base ${inr(sun.base)} + bonus ${inr(sun.bonus)}`;
-    document.getElementById('kpiDeadAmt').textContent = inr(dead.total);
-    document.getElementById('kpiDeadSub').textContent = `${deadKw.toFixed(2)} kW dead stock (Post-May 27)`;
-    document.getElementById('kpiComboAmt').textContent = inr(combo);
-    document.getElementById('kpiComboSub').textContent = `${totalKw.toFixed(2)} kW total (${deadKw.toFixed(2)} kW eligible dead stock)`;
+
+    // Only show Dead Stock incentive if there's any qualifying dead stock
+    document.getElementById('kpiDeadAmt').textContent = dead.total > 0 ? inr(dead.total) : '₹0.00';
+    document.getElementById('kpiDeadSub').textContent = dead.kw > 0 ? `${dead.kw.toFixed(2)} kW dead stock (after May 27, 2026)` : '₹0.00 kW dead stock';
+
+    document.getElementById('kpiComboAmt').textContent = inr(sun.total + dead.total);
+    document.getElementById('kpiComboSub').textContent = `${totalKw.toFixed(2)} kW total (${dead.kw > 0 ? dead.kw.toFixed(2) : '0.00'} kW dead stock)`;
 
     const sb = document.getElementById('sunBreakdown');
     sb.innerHTML = sun.rows.map(r => `<tr class="${r.kw > 0 ? 'current':''}"><td>${r.label}</td><td>${r.rate}</td><td>${r.kw.toFixed(2)}</td><td class="slab-amount">${inr(r.amt)}</td></tr>`).join('');
+
     document.getElementById('sunBonusLine').textContent = `Applied bonus (single highest): ${inr(sun.bonus)}`;
 
     const db = document.getElementById('deadBreakdown');
-    db.innerHTML = dead.rows.map(r => `<tr class="${r.kw > 0 ? 'current':''}"><td>${r.label}</td><td>${r.rate}</td><td>${r.kw.toFixed(2)}</td><td class="slab-amount">${inr(r.amt)}</td></tr>`).join('');
+    db.innerHTML = dead.rows.length > 0 ? dead.rows.map(r => `<tr class="${r.kw > 0 ? 'current':''}"><td>${r.label}</td><td>${r.rate}</td><td>${r.kw.toFixed(2)}</td><td class="slab-amount">${inr(r.amt)}</td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center;">No Dead Stock sales after May 27, 2026</td></tr>';
 
     updateCharts(sun, dead);
     updateCategoryCharts();
     updateProgress(totalKw);
 }
 
-/* ========== CHARTS & ACTIVITY ========== */
+/* ========== CHARTS ========== */
 function updateCharts(sun, dead) {
     if(typeof Chart === 'undefined') return;
     try {
@@ -770,7 +804,7 @@ function updateCharts(sun, dead) {
                 slabChart = new Chart(ctx.getContext('2d'), {
                     type:'bar',
                     data:{ labels: slabLabels, datasets:[{ label: 'Amount (₹)', data: slabData, backgroundColor: ['#0176D3','#1B96FF','#45BFFF', '#2E844A', '#9050E9','#FE9339'], borderRadius:6, borderSkipped:false }] },
-                    options:{ responsive:true, maintainAspectRatio:false, plugins: {legend: {display:false}}, scales:{x:{grid:{display:false}},y:{grid:{color: '#F3F3F3'}}} }
+                    options:{ responsive:true, maintainAspectRatio:false, plugins: {legend: {display:false}, tooltip: {backgroundColor: '#032D60', padding:12, cornerRadius:6, callbacks: {label: ctx=>'₹'+ctx.parsed.y.toLocaleString('en-IN')}}}, scales:{x:{grid:{display:false}, ticks: {font:{size:11, weight:'600'}}},y:{grid:{color: '#F3F3F3'}, ticks: {callback:v=>'₹'+v.toLocaleString('en-IN'), font: {size:11}}}} }
                 });
             }
         }
@@ -779,7 +813,10 @@ function updateCharts(sun, dead) {
         entries.forEach(e => {
             const v = parseFloat(e.kw) || 0;
             const prod = products.find(p => p.name.toLowerCase() === e.product.toLowerCase());
-            if(prod && prod.type === 'dead') deadTotal += v; else stdTotal += v;
+            const activeDate = new Date(e.activeDate);
+            const isAfterMay27 = activeDate >= new Date('2026-05-27');
+
+            if(prod && prod.type === 'dead' && isAfterMay27) deadTotal += v; else stdTotal += v;
         });
         const mixData = [stdTotal, deadTotal];
         if(mixChart){
@@ -791,14 +828,15 @@ function updateCharts(sun, dead) {
                 mixChart = new Chart(ctx2.getContext('2d'), {
                     type: 'doughnut',
                     data:{ labels: ['Standard', 'Dead Stock'], datasets:[{data:mixData, backgroundColor: ['#0176D3','#9050E9'], borderWidth:0, cutout:'70%'}] },
-                    options:{ responsive:true, maintainAspectRatio:false, plugins: {legend: {position:'bottom'}} }
+                    options:{ responsive:true, maintainAspectRatio:false, plugins: {legend: {position:'bottom', labels: {padding:16, font: {size:12, weight:'600'}}}, tooltip: {backgroundColor: '#032D60', padding: 12, cornerRadius:6, callbacks: {label:ctx=> `${ctx.label}: ${ctx.parsed.toFixed(2)} kW`}}} }
                 });
             }
         }
     } catch(err){ console.warn('Chart error:', err); }
 }
 
-function classifyProduct(name){
+/* ========== CATEGORY MIX CHARTS (Panels / Inverters / Batteries) — grouped by BRAND ========== */
+function classifyProduct(name) {
     if(/^JAM/i.test(name)) return {brand:'JA Solar', category:'panel'};
     if(/^JKM/i.test(name)) return {brand:'Jinko', category:'panel'};
     if(/^SPDG/i.test(name)) return {brand:'Sunpro Panels', category:'panel'};
@@ -807,11 +845,11 @@ function classifyProduct(name){
     if(/SigenStor/i.test(name)) return /BAT/i.test(name) ? {brand:'Sigenergy', category:'battery'} : {brand:'Sigenergy', category:'inverter'};
     if(/^KH\d/i.test(name)) return {brand:'FoxESS', category:'inverter'};
     if(/^CQ7/i.test(name)) return {brand:'FoxESS', category:'battery'};
-    if(/^SOF/i.test(name)){
+    if(/^SOF/i.test(name)) {
         if(/BTS/i.test(name)) return {brand:'Sofar Solar', category:'battery'};
         return {brand:'Sofar Solar', category:'inverter'};
     }
-    if(/ESY/i.test(name)){
+    if(/ESY/i.test(name)) {
         if(/SH-HM/i.test(name)) return {brand:'ESY', category:'battery'};
         if(/KWH/i.test(name)) return {brand:'ESY', category:'battery'};
         if(/HM\d/i.test(name)) return {brand:'ESY', category:'inverter'};
@@ -826,7 +864,7 @@ function classifyProduct(name){
     return {brand: (name.split(/[\s\-]/)[0] || 'Other'), category:'inverter'};
 }
 
-function computeCategoryMix(category){
+function computeCategoryMix(category) {
     const byBrand = {};
     let total = 0;
     entries.forEach(e => {
@@ -834,22 +872,30 @@ function computeCategoryMix(category){
         if(v <= 0) return;
         const cls = classifyProduct(e.product);
         if(cls.category !== category) return;
-        byBrand[cls.brand] = (byBrand[cls.brand] || 0) + v;
-        total += v;
+        const activeDate = new Date(e.activeDate);
+        const isAfterMay27 = activeDate >= new Date('2026-05-27');
+
+        if (cls.brand && isAfterMay27) {
+            byBrand[cls.brand] = (byBrand[cls.brand] || 0) + v;
+            total += v;
+        }
     });
+
+    // Sort descending by kW, then collapse anything beyond the top 7 into "Other" so a
+    // category with many brands doesn't turn the legend into a wall of text.
     let pairs = Object.entries(byBrand).sort((a,b) => b[1]-a[1]);
     const MAX_SLICES = 7;
-    if(pairs.length > MAX_SLICES){
+    if(pairs.length > MAX_SLICES) {
         const head = pairs.slice(0, MAX_SLICES);
         const tailTotal = pairs.slice(MAX_SLICES).reduce((sum,p) => sum + p[1], 0);
-        pairs = [...head, [`Other`, tailTotal]];
+        pairs = [...head, [`Other (${pairs.length - MAX_SLICES} brands)`, tailTotal]];
     }
     return { labels: pairs.map(p=>p[0]), data: pairs.map(p=>p[1]), total };
 }
 
 const CATEGORY_PALETTE = ['#0176D3','#1B96FF','#45BFFF','#9050E9','#C29DF2','#2E844A','#6BC490','#FE9339','#FFC078','#B85C00','#0B8ECC','#706E6B'];
 
-function renderCategoryChart(canvasId, chartVarSetter, chartVarGetter, category, emptyLabel){
+function renderCategoryChart(canvasId, chartVarSetter, chartVarGetter, category, emptyLabel) {
     const mix = computeCategoryMix(category);
     const ctx = document.getElementById(canvasId);
     if(!ctx) return;
@@ -857,9 +903,10 @@ function renderCategoryChart(canvasId, chartVarSetter, chartVarGetter, category,
     const labels = hasData ? mix.labels : [emptyLabel];
     const data = hasData ? mix.data : [1];
     const colors = hasData ? CATEGORY_PALETTE : ['#E5E5E5'];
+    const total = mix.total;
 
     let chart = chartVarGetter();
-    if(chart){
+    if(chart) {
         chart.data.labels = labels;
         chart.data.datasets[0].data = data;
         chart.data.datasets[0].backgroundColor = colors;
@@ -868,20 +915,61 @@ function renderCategoryChart(canvasId, chartVarSetter, chartVarGetter, category,
         chart = new Chart(ctx.getContext('2d'), {
             type: 'doughnut',
             data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, cutout: '65%' }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 10, font: { size: 10, weight: '600' }, boxWidth: 10,
+                            generateLabels: (chart) => {
+                                const ds = chart.data.datasets[0];
+                                const dataArr = ds.data;
+                                const lbls = chart.data.labels;
+                                const isEmpty = lbls.length === 1 && lbls[0] === emptyLabel;
+                                const grandTotal = dataArr.reduce((a,b)=>a+b, 0);
+                                return lbls.map((label, i) => {
+                                    if(isEmpty) return { text: label, fillStyle: ds.backgroundColor[i], strokeStyle: ds.backgroundColor[i], index: i };
+                                    const value = dataArr[i];
+                                    const pct = grandTotal > 0 ? (value / grandTotal * 100).toFixed(1) : '0.0';
+                                    return {
+                                        text: `${label} — ${value.toFixed(2)} kW (${pct}%)`,
+                                        fillStyle: ds.backgroundColor[i],
+                                        strokeStyle: ds.backgroundColor[i],
+                                        index: i
+                                    };
+                                });
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#032D60', padding: 12, cornerRadius: 6,
+                        callbacks: {
+                            label: (c) => {
+                                if(!hasData) return 'No sales yet';
+                                const pct = total > 0 ? (c.parsed / total * 100).toFixed(1) : '0.0';
+                                return `${c.label}: ${c.parsed.toFixed(2)} kW (${pct}%)`;
+                            }
+                        }
+                    }
+                }
+            }
         });
         chartVarSetter(chart);
     }
 }
 
-function updateCategoryCharts(){
+function updateCategoryCharts() {
     if(typeof Chart === 'undefined') return;
-    renderCategoryChart('panelMixChart', (c)=>panelMixChart=c, ()=>panelMixChart, 'panel', 'No panels yet');
-    renderCategoryChart('inverterMixChart', (c)=>inverterMixChart=c, ()=>inverterMixChart, 'inverter', 'No inverters yet');
-    renderCategoryChart('batteryMixChart', (c)=>batteryMixChart=c, ()=>batteryMixChart, 'battery', 'No batteries yet');
+    try {
+        renderCategoryChart('panelMixChart', (c)=>panelMixChart=c, ()=>panelMixChart, 'panel', 'No panels yet');
+        renderCategoryChart('inverterMixChart', (c)=>inverterMixChart=c, ()=>inverterMixChart, 'inverter', 'No inverters yet');
+        renderCategoryChart('batteryMixChart', (c)=>batteryMixChart=c, ()=>batteryMixChart, 'battery', 'No batteries yet');
+    } catch(err){ console.warn('Category chart error:', err); }
 }
 
-function updateProgress(totalKw){
+/* ========== PROGRESS ========== */
+function updateProgress(totalKw) {
     const tiers = [
         {label: 'Next: ₹25,000 bonus', target:1000, color:''},
         {label: 'Next: ₹50,000 bonus', target:1500, color: 'success'},
@@ -895,18 +983,22 @@ function updateProgress(totalKw){
     }).join('');
 }
 
-function updateActivity(){
+/* ========== ACTIVITY ========== */
+function updateActivity() {
     const list = document.getElementById('activityList');
-    if(entries.length === 0){
-        list.innerHTML = '<div class="empty-state" style="padding:24px;"><p>No activity yet.</p></div>';
+    if(entries.length === 0) {
+        list.innerHTML = '<div class="empty-state" style="padding:24px;"><p>No activity yet. Import sales to get started.</p></div>';
         return;
     }
     const recent = entries.slice(-5).reverse();
     list.innerHTML = recent.map(e => {
         const prod = products.find(p => p.name.toLowerCase() === e.product.toLowerCase());
         const type = prod ? prod.type : 'std';
-        const iconClass = type === 'dead' ? 'purple' : 'blue';
-        return `<div class="activity-item fade-in"><div class="activity-icon ${iconClass}">📦</div><div class="activity-content"><div class="activity-title">Added <strong>${e.project || 'Project'}</strong> - ${parseFloat(e.kw).toFixed(2)} kW</div><div class="activity-meta">${type==='dead'?'Dead Stock':'Standard'} • ${e.saleDate}</div></div></div>`;
+        const activeDate = new Date(e.activeDate);
+        const isAfterMay27 = activeDate >= new Date('2026-05-27');
+        const iconClass = isAfterMay27 && type === 'dead' ? 'purple' : type === 'dead' ? 'blue' : 'blue';
+
+        return `<div class="activity-item fade-in"><div class="activity-icon ${iconClass}">📦</div><div class="activity-content"><div class="activity-title">Added <strong>${e.project || 'Project'} (${e.name || 'Customer'})</strong> - ${parseFloat(e.kw).toFixed(2)} kW</div><div class="activity-meta">Active: ${e.activeDate} • ${type==='dead'?'Dead Stock':'Standard'} • Status: ${e.status || 'Active'}</div></div></div>`;
     }).join('');
 }
 
@@ -916,27 +1008,9 @@ const BATTERY_HINT_RX = /KWH|\bBAT\b|\bEC\s?\d|SH-HM|SMILE|FORCE-H|SIH-|SIEB/i;
 const PANEL_HINT_RX = /JAM|SPDG|IEC\s?61215|LR|PANEL/i;
 const RECORD_ID_RX = /^[A-Za-z0-9]{1,4}\d{3,}$/;
 const PRODUCT_CELL_RX = /^\d+[A-Za-z][A-Za-z0-9\-\/]{2,}/;
-const KW_LINE_RX = /^(\d+(?:\.\d+)?)\s*kW\s*\+\s*(\d+(?:\.\d+)?)\s*kW$/i;
-// Regex to find dates like 20-Aug-2026 or 20/08/2026
-const DATE_LINE_RX = /\d{1,2}[-\/](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-\/]\d{4}/i;
+const KW_LINE_RX = /^(\d+(?:\.\d+)?)\s*kW\s*\+\s*(\d+(?:\.\d+)?)\s*$/i;
 
-function parseDate(dateStr) {
-    if (!dateStr) return null;
-    const parts = dateStr.split(/[-\/]/);
-    if (parts.length === 3) {
-        const months = {jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11};
-        const day = parseInt(parts[0]);
-        const month = months[parts[1].toLowerCase().substring(0,3)];
-        const year = parseInt(parts[2]);
-        if (!isNaN(day) && month !== undefined && !isNaN(year)) {
-            // Create date in local timezone to match the cutoff logic
-            return new Date(year, month, day).toISOString().split('T')[0];
-        }
-    }
-    return null;
-}
-
-function parseCRMTable(lines){
+function parseCRMTable(lines) {
     const hasTabs = lines.some(l => l.includes('\t'));
     if(!hasTabs) return null;
     const records = [];
@@ -944,15 +1018,10 @@ function parseCRMTable(lines){
     lines.forEach(line => {
         const fields = line.split('\t').map(f => f.trim());
         const first = fields[0];
-        if (RECORD_ID_RX.test(first)){
+        if (RECORD_ID_RX.test(first)) {
             if(current) records.push(current);
-            current = {id:first, lines: [fields], date: null};
-        } else if(current) { 
-            current.lines.push(fields); 
-            fields.forEach(f => {
-                if(DATE_LINE_RX.test(f)) current.date = parseDate(f);
-            });
-        }
+            current = {id: first, lines: [fields]};
+        } else if(current) { current.lines.push(fields); }
     });
     if(current) records.push(current);
     if(records.length === 0) return null;
@@ -960,11 +1029,12 @@ function parseCRMTable(lines){
     records.forEach(rec => {
         let solarKW = null, batteryKW = null;
         const productNames = [];
+        const activeDate = rec.lines.find(line => line.some(f => /^\d{4}-\d{2}-\d{2}$/.test(f)))?.join(' ') || '2026-05-27';
         rec.lines.forEach(fields => {
             fields.forEach(f => {
                 if(!f) return;
                 const kwm = f.match(KW_LINE_RX);
-                if(kwm){ solarKW = parseFloat(kwm[1]); batteryKW = parseFloat(kwm[2]); return; }
+                if(kwm) { solarKW = parseFloat(kwm[1]); batteryKW = parseFloat(kwm[2]); return; }
                 if(PRODUCT_CELL_RX.test(f)) productNames.push(f.replace(/^\d+/, ''));
             });
         });
@@ -972,69 +1042,47 @@ function parseCRMTable(lines){
         const isDead = productNames.some(p => DEAD_BRAND_RX.test(p));
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
-        results.push({id:rec.id, solarKW, batteryKW, isDead, batteryProd, solarProd, date: rec.date});
+        results.push({id: rec.id, solarKW, batteryKW, isDead, batteryProd, solarProd, activeDate});
     });
     return results.length ? results : null;
 }
 
-function parseCRMBlocks(lines){
+function parseCRMBlocks(lines) {
     const boundaries = [];
-    // Find all lines that start with a Record ID (e.g., SA12345 or 3P12345)
     lines.forEach((l,i) => { if(RECORD_ID_RX.test(l)) boundaries.push(i); });
     if(boundaries.length === 0) return null;
-    
     const records = [];
     boundaries.forEach((start,idx) => {
         const end = idx+1 < boundaries.length ? boundaries[idx+1] : lines.length;
         const block = lines.slice(start, end);
-        
-        // 1. Find the kW line
         const kwIdx = block.findIndex(l => KW_LINE_RX.test(l));
         if(kwIdx === -1) return;
         const m = block[kwIdx].match(KW_LINE_RX);
         const solarKW = parseFloat(m[1]);
         const batteryKW = parseFloat(m[2]);
-        
-        // 2. Find the Date anywhere in the block (fixes the May 8th issue)
-        let saleDate = null;
-        for(let i=0; i<block.length; i++) {
-            if(DATE_LINE_RX.test(block[i])) {
-                saleDate = parseDate(block[i]);
-                break; // Stop at the first date found
-            }
-        }
-
-        // 3. Extract Product Names by walking backward from the kW line
         const productNames = [];
         let i = kwIdx - 1;
-        while(i >= 0 && !RECORD_ID_RX.test(block[i])){
-            // Look for lines that are just a number (quantity) followed by a product name
-            // or lines that start with a quantity and product together
-            if(/^\d+$/.test(block[i]) && i-1 >= 0 && !RECORD_ID_RX.test(block[i-1])) {
-                 productNames.unshift(block[i-1]);
-                 i -= 2;
-            } else {
-                i--;
-            }
+        while(i - 1 >= 0 && /^\d+$/.test(block[i-1]) && !RECORD_ID_RX.test(block[i])) {
+            productNames.unshift(block[i]);
+            i -= 2;
         }
-        
         const id = block[0];
+        const activeDate = block.find((line, idx) => idx > kwIdx && /^\d{4}-\d{2}-\d{2}$/.test(line))?.trim() || '2026-05-27';
         const isDead = productNames.some(p => DEAD_BRAND_RX.test(p));
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
-        
-        records.push({id, solarKW, batteryKW, isDead, batteryProd, solarProd, date: saleDate});
+        records.push({id, solarKW, batteryKW, isDead, batteryProd, solarProd, activeDate});
     });
     return records.length ? records : null;
 }
 
-function ensureProduct(name, type){
+function ensureProduct(name, type) {
     let p = products.find(item => item.name.toLowerCase() === name.toLowerCase());
-    if(!p){ p = {name, type}; products.push(p); return {p, created:true}; }
-    return {p, created:false};
+    if(!p) { p = {name, type}; products.push(p); return {p, created: true}; }
+    return {p, created: false};
 }
 
-function parseSimpleLines(lines){
+function parseSimpleLines(lines) {
     let added = 0, newProducts = 0;
     lines.forEach(line => {
         const numMatches = line.match(/\d+(\.\d+)?/g);
@@ -1043,7 +1091,7 @@ function parseSimpleLines(lines){
         if(isNaN(kw) || kw <= 0) return;
 
         let productText = line;
-        productText = productText.replace(new RegExp('\\b'+numMatches[numMatches.length-1].replace('.','\\.')+'\\b'), '');
+        productText = productText.replace(new RegExp('\\b'+numMatches[numMatches.length-1].replace('.','\\.')+'\\b', 'g'), '');
         productText = productText.replace(/kw|kilowatt|units?|qty/gi, '');
         productText = productText.replace(/\t|,|\|/g, ' ').replace(/\s{2,}/g, ' ').trim();
         productText = productText.replace(/^[-–—:\s]+|[-–—:\s]+$/g, '');
@@ -1051,63 +1099,68 @@ function parseSimpleLines(lines){
 
         const res = ensureProduct(productText, 'std');
         if(res.created) newProducts++;
-        addRow(kw, res.p.name, null, 'Client', 'Active');
+        addRow(kw, res.p.name, null, 'Client', 'Active', '2026-05-27');
         added++;
     });
     return {added, newProducts};
 }
 
-function parsePaste(){
+function parsePaste() {
     const raw = document.getElementById('pasteBox').value;
     const status = document.getElementById('pasteStatus');
     const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-    if(lines.length === 0){ status.textContent = 'Nothing to parse.'; status.className='paste-status'; return; }
-    
+    if(lines.length === 0) { status.textContent = 'Nothing to parse.'; status.className = 'paste-status'; return; }
+
     const crmRecords = parseCRMTable(lines) || parseCRMBlocks(lines);
-    if(crmRecords){
+    if(crmRecords) {
         let added = 0, newProducts = 0, updatedProjects = 0;
         crmRecords.forEach(r => {
             const alreadyExists = entries.some(e => e.project === r.id);
             removeEntriesForProject(r.id);
             if(alreadyExists) updatedProjects++;
 
-            if(r.solarKW > 0){
+            if(r.solarKW > 0) {
                 const res = ensureProduct(r.solarProd, 'std');
                 if(res.created) newProducts++;
-                addRow(r.solarKW, res.p.name, r.id, 'Client', 'Active', r.date);
+                addRow(r.solarKW, res.p.name, r.id, 'Client', 'Active', r.activeDate);
                 added++;
             }
-            if(r.batteryKW > 0){
-                const res = ensureProduct(r.batteryProd, r.isDead? 'dead': 'std');
+            if(r.batteryKW > 0) {
+                const res = ensureProduct(r.batteryProd, r.isDead ? 'dead' : 'std');
                 if(res.created) newProducts++;
-                addRow(r.batteryKW, res.p.name, r.id, 'Client', 'Active', r.date);
+                addRow(r.batteryKW, res.p.name, r.id, 'Client', 'Active', r.activeDate);
                 added++;
             }
         });
         renderProducts(); renderRows(); calculate(); updateActivity();
-        status.textContent = `✔ Recognized ${crmRecords.length} CRM rows → added ${added} sale lines`;
+        status.textContent = `✔ Recognized ${crmRecords.length} CRM rows → added ${added} sale lines` + (updatedProjects ? ` — ${updatedProjects} project${updatedProjects===1?'':'s'} replaced existing data (no duplicates).` : '');
         status.className = 'paste-status success';
     } else {
         const {added, newProducts} = parseSimpleLines(lines);
         renderProducts(); renderRows(); calculate(); updateActivity();
-        if(added > 0){
-            status.textContent = `✔ Added ${added} sale line${added===1?'':'s'}`;
+        if(added > 0) {
+            status.textContent = `✔ Added ${added} sale line${added===1?'':'s'}` + (newProducts ? `, ${newProducts} new product${newProducts===1?'':'s'} added as Standard — check types in Products tab.` : '.');
             status.className = 'paste-status success';
         } else {
-            status.textContent = 'Could not parse format.';
+            status.textContent = 'Could not parse format. Please check structure.';
             status.className = 'paste-status';
         }
     }
     document.getElementById('pasteBox').value = '';
 }
 
-function parseUploadedRows(rows){
+// Parses raw spreadsheet rows (array of cell values per row) directly by pattern —
+// completely ignoring column headers. This is necessary because many CRM/web exports
+// use auto-generated header names (CSS class names, UI labels, etc.) instead of real
+// column titles like "Project" or "kW", which made the old header-based lookup silently
+// find nothing and add zero rows. Reuses the exact same detection rules as the paste parsers.
+function parseUploadedRows(rows) {
     const records = [];
     rows.forEach(row => {
         if(!Array.isArray(row)) return;
         const cells = row.map(c => (c===null||c===undefined) ? '' : String(c).trim());
         const idCell = cells.find(c => RECORD_ID_RX.test(c));
-        if(!idCell) return; 
+        if(!idCell) return; // not a data row (header row, blank row, etc.)
 
         const kwIdx = cells.findIndex(c => KW_LINE_RX.test(c));
         if(kwIdx === -1) return;
@@ -1116,14 +1169,11 @@ function parseUploadedRows(rows){
         const batteryKW = parseFloat(m[2]);
 
         const customerName = cells[1] || 'Unknown';
-        
-        let saleDate = null;
-        cells.forEach(c => {
-            if(DATE_LINE_RX.test(c)) saleDate = parseDate(c);
-        });
 
+        // Scan adjacent cell pairs for qty+product: a bare number followed by a
+        // non-numeric, non-price, non-date, non-status cell is treated as a product line.
         const productNames = [];
-        for(let i=0; i<cells.length-1; i++){
+        for(let i=0; i<cells.length-1; i++) {
             const a = cells[i], b = cells[i+1];
             if(!/^\d+$/.test(a)) continue;
             if(!b) continue;
@@ -1139,7 +1189,11 @@ function parseUploadedRows(rows){
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
 
-        records.push({id: idCell, customerName, solarKW, batteryKW, isDead, batteryProd, solarProd, date: saleDate});
+        // Find active date in cells
+        const activeDateCell = cells.find(c => /^\d{4}-\d{2}-\d{2}$/.test(c));
+        const activeDate = activeDateCell || '2026-05-27';
+
+        records.push({id: idCell, customerName, solarKW, batteryKW, isDead, batteryProd, solarProd, activeDate});
     });
     return records;
 }
@@ -1162,20 +1216,21 @@ function handleFileUpload() {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
             let rows = [];
+            let sheetsWithData = 0;
             workbook.SheetNames.forEach(name => {
                 const worksheet = workbook.Sheets[name];
                 const sheetRows = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ''});
-                if(sheetRows.length > 0){ rows = rows.concat(sheetRows); }
+                if(sheetRows.length > 0) { sheetsWithData++; rows = rows.concat(sheetRows); }
             });
-            if (rows.length === 0) {
+            if(rows.length === 0) {
                 statusLabel.style.color = "var(--error)";
                 statusLabel.innerText = "File is empty.";
                 return;
             }
             const records = parseUploadedRows(rows);
-            if (records.length === 0) {
+            if(records.length === 0) {
                 statusLabel.style.color = "var(--error)";
-                statusLabel.innerText = "Could not recognize any rows.";
+                statusLabel.innerText = "Could not recognize any rows — expected a Project ID (starting with letters+digits, e.g. SA12345) and a \"X kW + Y kW\" cell in each row.";
                 return;
             }
             let added = 0, newProducts = 0, updatedProjects = 0;
@@ -1184,24 +1239,24 @@ function handleFileUpload() {
                 removeEntriesForProject(r.id);
                 if(alreadyExists) updatedProjects++;
 
-                if(r.solarKW > 0){
+                if(r.solarKW > 0) {
                     const res = ensureProduct(r.solarProd, 'std');
                     if(res.created) newProducts++;
-                    addRow(r.solarKW, res.p.name, r.id, r.customerName, 'Active', r.date);
+                    addRow(r.solarKW, res.p.name, r.id, r.customerName, 'Active', r.activeDate);
                     added++;
                 }
-                if(r.batteryKW > 0){
+                if(r.batteryKW > 0) {
                     const res = ensureProduct(r.batteryProd, r.isDead ? 'dead' : 'std');
                     if(res.created) newProducts++;
-                    addRow(r.batteryKW, res.p.name, r.id, r.customerName, 'Active', r.date);
+                    addRow(r.batteryKW, res.p.name, r.id, r.customerName, 'Active', r.activeDate);
                     added++;
                 }
             });
             statusLabel.style.color = "var(--success)";
-            statusLabel.innerText = `Success! Recognized ${records.length} rows → added ${added} sale lines.`;
+            statusLabel.innerText = `Success! Read ${sheetsWithData} sheet${sheetsWithData===1?'':'s'}, recognized ${records.length} rows → added ${added} sale lines` + (newProducts ? ` (${newProducts} new products added).` : '.') + (updatedProjects ? ` ${updatedProjects} project${updatedProjects===1?'':'s'} replaced existing data (no duplicates).` : '');
             fileInput.value = "";
             renderProducts(); renderRows(); calculate(); updateActivity();
-        } catch (error) {
+        } catch(error) {
             console.error(error);
             statusLabel.style.color = "var(--error)";
             statusLabel.innerText = "Error parsing file format.";
@@ -1215,7 +1270,7 @@ try {
     renderProducts();
     calculate();
     updateActivity();
-} catch(err){
+} catch(err) {
     console.error('Init error:', err);
 }
 </script>
