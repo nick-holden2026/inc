@@ -632,7 +632,12 @@ function extractActivationDate(values){
 }
 
 function deadStockDateEligible(activationDate){
-    return !!activationDate && activationDate >= DEAD_STOCK_INCENTIVE_START;
+    // Always normalize the stored/imported value before comparing dates.
+    // Older/imported records may contain DD/MM/YYYY, DD-MMM-YYYY, Date objects,
+    // or Excel serials. A raw string comparison can incorrectly make 30/04/2026
+    // look newer than 27-May-2026.
+    const normalized = normalizeActivationDate(activationDate);
+    return !!normalized && normalized >= DEAD_STOCK_INCENTIVE_START;
 }
 
 function formatActivationDate(date){
@@ -652,7 +657,7 @@ function addRow(kw, product, project, name, status, activationDate){
         status: status || 'Active',
         product: product || products[0]?.name || 'Standard',
         kw: kw || 0,
-        activationDate: activationDate || null
+        activationDate: normalizeActivationDate(activationDate) || null
     });
     renderRows(); calculate(); updateActivity();
 }
