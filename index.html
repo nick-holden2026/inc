@@ -404,6 +404,10 @@ Add Entry
 <label>kW Sold</label>
 <input type="number" id="newEntryKw" step="0.01" min="0" placeholder="0.00">
 </div>
+<div class="form-group">
+<label>Sale Date</label>
+<input type="date" id="newEntryDate">
+</div>
 <button class="btn btn-primary" onclick="addEntryFromForm()">Save Entry</button>
 <button class="btn btn-secondary" onclick="document.getElementById('addEntryForm').classList.remove('show')">Cancel</button>
 </div>
@@ -421,11 +425,12 @@ Add Entry
 <table>
 <thead>
 <tr>
-<th style="width:22%">Project / Name</th>
-<th style="width:28%">Product</th>
-<th style="width:15%">Type</th>
-<th style="width:15%">kW Sold</th>
-<th style="width:12%">Status</th>
+<th style="width:19%">Project / Name</th>
+<th style="width:24%">Product</th>
+<th style="width:13%">Type</th>
+<th style="width:11%">kW Sold</th>
+<th style="width:10%">Status</th>
+<th style="width:15%">Sale Date</th>
 <th style="width:8%"></th>
 </tr>
 </thead>
@@ -479,8 +484,6 @@ Parse &amp; Import
 </button>
 <button class="btn btn-secondary" onclick="document.getElementById('pasteBox').value=''">Clear</button>
 <span class="paste-status" id="pasteStatus"></span>
-</div><div style="margin-top:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:0.82rem;color:var(--muted);">
-<strong style="color:var(--text);">Dead Stock incentive:</strong> only sales with Activation Date on or after <strong>27-May-2026</strong> qualify. Sunboost incentive calculation is unchanged.
 </div>
 </div>
 </div>
@@ -584,80 +587,17 @@ function refreshProductDropdowns(){
     });
 }
 
-/* ========== DEAD STOCK INCENTIVE ACTIVATION DATE ========== */
-/* Dead Stock incentive is eligible only for sales with Activation Date on/after
-   27-May-2026. Sunboost/slab incentive is NOT affected by this date. */
-const DEAD_STOCK_INCENTIVE_START = '2026-05-27';
-
-function normalizeActivationDate(value){
-    if(value instanceof Date && !isNaN(value.getTime())){
-        return value.toISOString().slice(0,10);
-    }
-    const s = String(value ?? '').trim();
-    if(!s) return null;
-
-    // Excel serial date
-    if(/^\d+(?:\.\d+)?$/.test(s)){
-        const serial = Number(s);
-        if(serial > 20000 && serial < 80000 && typeof XLSX !== 'undefined' && XLSX.SSF){
-            const dc = XLSX.SSF.parse_date_code(serial);
-            if(dc && dc.y && dc.m && dc.d){
-                return `${String(dc.y).padStart(4,'0')}-${String(dc.m).padStart(2,'0')}-${String(dc.d).padStart(2,'0')}`;
-            }
-        }
-    }
-
-    let m = s.match(/\b(\d{1,2})[-\/](Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-\/](\d{4})\b/i);
-    if(m){
-        const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
-        return `${m[3]}-${String(months[m[2].toLowerCase()]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
-    }
-    m = s.match(/\b(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})\b/);
-    if(m){
-        return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
-    }
-    m = s.match(/\b(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})\b/);
-    if(m){
-        return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
-    }
-    return null;
-}
-
-function extractActivationDate(values){
-    for(const value of values || []){
-        const date = normalizeActivationDate(value);
-        if(date) return date;
-    }
-    return null;
-}
-
-function deadStockDateEligible(activationDate){
-    // Always normalize the stored/imported value before comparing dates.
-    // Older/imported records may contain DD/MM/YYYY, DD-MMM-YYYY, Date objects,
-    // or Excel serials. A raw string comparison can incorrectly make 30/04/2026
-    // look newer than 27-May-2026.
-    const normalized = normalizeActivationDate(activationDate);
-    return !!normalized && normalized >= DEAD_STOCK_INCENTIVE_START;
-}
-
-function formatActivationDate(date){
-    if(!date) return 'No activation date';
-    const [y,m,d] = date.split('-');
-    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${d}-${months[Number(m)-1]}-${y}`;
-}
-
 /* ========== ENTRIES ========== */
-function addRow(kw, product, project, name, status, activationDate){
+function addRow(kw, product, project, name, status, date){
     const id = rowId++;
     entries.push({
-        id,
-        project: project || `SA${Math.floor(10000 + Math.random() * 90000)}`,
-        name: name || 'Customer',
+        id, 
+        project: project || `SA${Math.floor(10000 + Math.random() * 90000)}`, 
+        name: name || 'Customer', 
         status: status || 'Active',
-        product: product || products[0]?.name || 'Standard',
+        product: product || products[0]?.name || 'Standard', 
         kw: kw || 0,
-        activationDate: normalizeActivationDate(activationDate) || null
+        date: date || null // sale/activation date; drives the Dead Stock cutoff rule
     });
     renderRows(); calculate(); updateActivity();
 }
@@ -685,7 +625,7 @@ function renderRows(){
     });
 
     if(filtered.length === 0){
-        body.innerHTML = '<tr><td colspan="6"><div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h4>No entries found</h4><p>Add your first sale or import data to get started.</p></div></td></tr>';
+        body.innerHTML = '<tr><td colspan="7"><div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h4>No entries found</h4><p>Add your first sale or import data to get started.</p></div></td></tr>';
         return;
     }
 
@@ -698,13 +638,28 @@ function renderRows(){
         if(e.status === 'Complete') statusColor = 'var(--success)';
         if(e.status === 'Close') statusColor = 'var(--error)';
 
+        // Date display + Dead Stock cutoff eligibility, so it's visible per-row, not just
+        // as an aggregate KPI note.
+        let dateCell;
+        if(!e.date){
+            dateCell = `<span style="color:var(--muted); font-size:0.78rem;">No date</span>`;
+        } else {
+            const dateStr = e.date.toLocaleDateString('en-AU', {day:'2-digit', month:'short', year:'numeric'});
+            if(type === 'dead' && !isOnOrAfterDeadStockCutoff(e.date)){
+                dateCell = `<div style="font-size:0.82rem;">${dateStr}</div><div style="font-size:0.7rem; color:var(--warning); font-weight:700;">Pre-cutoff</div>`;
+            } else {
+                dateCell = `<div style="font-size:0.82rem;">${dateStr}</div>`;
+            }
+        }
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><div style="font-weight:700; color:var(--text);">${e.project || '-'}</div><div style="font-size:0.75rem; color:var(--muted);">${e.name || '-'}</div><div style="font-size:0.7rem; color:var(--muted);">Activation: ${formatActivationDate(e.activationDate)}</div></td>
+            <td><div style="font-weight:700; color:var(--text);">${e.project || '-'}</div><div style="font-size:0.75rem; color:var(--muted);">${e.name || '-'}</div></td>
             <td><div class="product-cell"><span class="product-dot ${type}"></span><div><div class="product-name">${e.product}</div><div class="product-type">${type==='dead'?'Dead Stock eligible':'Standard product'}</div></div></div></td>
             <td><span class="status-badge ${type}"><span class="dot"></span>${type==='dead'?'Dead Stock':'Standard'}</span></td>
             <td class="kw-cell">${kw.toFixed(2)} kW</td>
             <td><span style="color:${statusColor}; font-size:0.82rem; font-weight:700;">${e.status || 'Active'}</span></td>
+            <td>${dateCell}</td>
             <td><div class="row-actions"><button class="delete" onclick="removeRow(${e.id})" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></td>
         `;
         body.appendChild(tr);
@@ -716,11 +671,14 @@ function addEntryFromForm(){
     const status = document.getElementById('newEntryStatus').value;
     const product = document.getElementById('newEntryProduct').value;
     const kw = document.getElementById('newEntryKw').value;
+    const dateStr = document.getElementById('newEntryDate') ? document.getElementById('newEntryDate').value : '';
+    const saleDate = dateStr ? new Date(dateStr + 'T00:00:00') : null;
     if(!kw || parseFloat(kw) <= 0){ alert('Please enter a valid kW value'); return; }
-    addRow(parseFloat(kw), product, project, name, status);
+    addRow(parseFloat(kw), product, project, name, status, saleDate);
     document.getElementById('newEntryProject').value = '';
     document.getElementById('newEntryName').value = '';
     document.getElementById('newEntryKw').value = '';
+    if(document.getElementById('newEntryDate')) document.getElementById('newEntryDate').value = '';
     document.getElementById('addEntryForm').classList.remove('show');
 }
 document.querySelectorAll('.filter-chip').forEach(c => {
@@ -777,19 +735,28 @@ function deadStockCalc(deadKw){
 function inr(n){ return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
 function calculate(){
-    let totalKw = 0, deadKw = 0;
+    let totalKw = 0, deadKw = 0, deadKwExcludedByDate = 0;
     entries.forEach(e => {
         const v = parseFloat(e.kw);
         if(!isNaN(v) && v > 0){
             totalKw += v;
             const prod = products.find(p => p.name.trim().toLowerCase() === e.product.trim().toLowerCase());
-            if(prod && prod.type === 'dead' && deadStockDateEligible(e.activationDate)) deadKw += v;
+            if(prod && prod.type === 'dead'){
+                // Dead Stock activation-date rule: only sales on/after 27 May 2026 count
+                // toward the incentive. Product classification itself is unaffected.
+                if(isOnOrAfterDeadStockCutoff(e.date)){
+                    deadKw += v;
+                } else {
+                    deadKwExcludedByDate += v;
+                }
+            }
         }
     });
     // Round away floating-point summation drift (e.g. 0.1 + 0.2 !== 0.3 in JS) before slab math,
     // otherwise totals can land a cent or two off a slab boundary and silently under/over-pay.
     totalKw = Math.round(totalKw * 100) / 100;
     deadKw = Math.round(deadKw * 100) / 100;
+    deadKwExcludedByDate = Math.round(deadKwExcludedByDate * 100) / 100;
 
     const sun = sunboostCalc(totalKw);
     const dead = deadStockCalc(deadKw);
@@ -799,7 +766,7 @@ function calculate(){
     document.getElementById('kpiSunAmt').textContent = inr(sun.total);
     document.getElementById('kpiSunSub').textContent = `${totalKw.toFixed(2)} kW · Base ${inr(sun.base)} + bonus ${inr(sun.bonus)}`;
     document.getElementById('kpiDeadAmt').textContent = inr(dead.total);
-    document.getElementById('kpiDeadSub').textContent = `${deadKw.toFixed(2)} kW dead stock`;
+    document.getElementById('kpiDeadSub').textContent = `${deadKw.toFixed(2)} kW dead stock (from 27 May 2026)` + (deadKwExcludedByDate > 0 ? ` · ${deadKwExcludedByDate.toFixed(2)} kW excluded (before cutoff)` : '');
     document.getElementById('kpiComboAmt').textContent = inr(combo);
     document.getElementById('kpiComboSub').textContent = `${totalKw.toFixed(2)} kW total (${deadKw.toFixed(2)} kW dead stock)`;
 
@@ -1029,6 +996,30 @@ const RECORD_ID_RX = /^[A-Za-z0-9]{1,4}\d{3,}$/;
 const PRODUCT_CELL_RX = /^\d+[A-Za-z][A-Za-z0-9\-\/]{2,}/;
 const KW_LINE_RX = /^(\d+(?:\.\d+)?)\s*kW\s*\+\s*(\d+(?:\.\d+)?)\s*kW$/i;
 
+// Dead Stock activation-date rule: only sales dated on or after 27 May 2026 count
+// toward the Dead Stock incentive. Product brand classification is unaffected — a
+// sale before this date still shows as a Dead Stock-eligible product, it just doesn't
+// count toward the incentive total, per the cutoff.
+const DEAD_STOCK_CUTOFF = new Date(2026, 4, 27); // May = month 4 (0-indexed)
+const DATE_CELL_RX = /^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/;
+const MONTH_MAP = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+function parseCrmDate(str){
+    if(!str) return null;
+    const m = String(str).trim().match(DATE_CELL_RX);
+    if(!m) return null;
+    const day = parseInt(m[1], 10);
+    const mon = MONTH_MAP[m[2].toLowerCase()];
+    if(mon === undefined) return null;
+    let year = parseInt(m[3], 10);
+    if(year < 100) year += 2000;
+    const d = new Date(year, mon, day);
+    return isNaN(d.getTime()) ? null : d;
+}
+function isOnOrAfterDeadStockCutoff(date){
+    if(!date) return false; // unknown date -> cannot confirm eligibility, excluded per the rule
+    return date.getTime() >= DEAD_STOCK_CUTOFF.getTime();
+}
+
 function parseCRMTable(lines){
     const hasTabs = lines.some(l => l.includes('\t'));
     if(!hasTabs) return null;
@@ -1046,25 +1037,25 @@ function parseCRMTable(lines){
     if(records.length === 0) return null;
     const results = [];
     records.forEach(rec => {
-        let solarKW = null, batteryKW = null;
-        const activationValues = [];
+        let solarKW = null, batteryKW = null, dateRaw = null;
         const productNames = [];
         rec.lines.forEach(fields => {
             fields.forEach(f => {
                 if(!f) return;
-                activationValues.push(f);
                 const kwm = f.match(KW_LINE_RX);
                 if(kwm){ solarKW = parseFloat(kwm[1]); batteryKW = parseFloat(kwm[2]); return; }
+                if(!dateRaw && DATE_CELL_RX.test(f)) { dateRaw = f; return; }
                 // Strip the leading quantity digit(s) so "3ESY-SH-HM-5-H" and "6ESY-SH-HM-5-H"
                 // are recognized as the same product, not two different catalog entries.
                 if(PRODUCT_CELL_RX.test(f)) productNames.push(f.replace(/^\d+/, ''));
             });
         });
         if(solarKW === null || batteryKW === null) return;
+        const saleDate = parseCrmDate(dateRaw);
         const isDead = productNames.some(p => DEAD_BRAND_RX.test(p));
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
-        results.push({id:rec.id, solarKW, batteryKW, isDead, batteryProd, solarProd, activationDate:extractActivationDate(activationValues)});
+        results.push({id:rec.id, solarKW, batteryKW, isDead, batteryProd, solarProd, saleDate});
     });
     return results.length ? results : null;
 }
@@ -1089,10 +1080,12 @@ function parseCRMBlocks(lines){
             i -= 2;
         }
         const id = block[0];
+        const dateLine = block.find(l => DATE_CELL_RX.test(l.trim()));
+        const saleDate = parseCrmDate(dateLine);
         const isDead = productNames.some(p => DEAD_BRAND_RX.test(p));
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
-        records.push({id, solarKW, batteryKW, isDead, batteryProd, solarProd, activationDate:extractActivationDate(block)});
+        records.push({id, solarKW, batteryKW, isDead, batteryProd, solarProd, saleDate});
     });
     return records.length ? records : null;
 }
@@ -1143,13 +1136,13 @@ function parsePaste(){
             if(r.solarKW > 0){
                 const res = ensureProduct(r.solarProd, 'std');
                 if(res.created) newProducts++;
-                addRow(r.solarKW, res.p.name, r.id, r.customerName || 'Client', 'Active', r.activationDate);
+                addRow(r.solarKW, res.p.name, r.id, 'Client', 'Active', r.saleDate);
                 added++;
             }
             if(r.batteryKW > 0){
                 const res = ensureProduct(r.batteryProd, r.isDead? 'dead': 'std');
                 if(res.created) newProducts++;
-                addRow(r.batteryKW, res.p.name, r.id, r.customerName || 'Client', 'Active', r.activationDate);
+                addRow(r.batteryKW, res.p.name, r.id, 'Client', 'Active', r.saleDate);
                 added++;
             }
         });
@@ -1189,8 +1182,10 @@ function parseUploadedRows(rows){
         const solarKW = parseFloat(m[1]);
         const batteryKW = parseFloat(m[2]);
 
+        const dateCell = cells.find(c => DATE_CELL_RX.test(c));
+        const saleDate = parseCrmDate(dateCell);
+
         const customerName = cells[1] || 'Unknown';
-        const activationDate = extractActivationDate(cells);
 
         // Scan adjacent cell pairs for qty+product: a bare number followed by a
         // non-numeric, non-price, non-date, non-status cell is treated as a product line.
@@ -1211,7 +1206,7 @@ function parseUploadedRows(rows){
         const batteryProd = productNames.find(p => BATTERY_HINT_RX.test(p)) || productNames[productNames.length-1] || 'Battery';
         const solarProd = productNames.find(p => PANEL_HINT_RX.test(p)) || productNames[0] || 'Solar';
 
-        records.push({id: idCell, customerName, solarKW, batteryKW, isDead, batteryProd, solarProd, activationDate});
+        records.push({id: idCell, customerName, solarKW, batteryKW, isDead, batteryProd, solarProd, saleDate});
     });
     return records;
 }
@@ -1262,13 +1257,13 @@ function handleFileUpload() {
                 if(r.solarKW > 0){
                     const res = ensureProduct(r.solarProd, 'std');
                     if(res.created) newProducts++;
-                    addRow(r.solarKW, res.p.name, r.id, r.customerName, 'Active', r.activationDate);
+                    addRow(r.solarKW, res.p.name, r.id, r.customerName, 'Active', r.saleDate);
                     added++;
                 }
                 if(r.batteryKW > 0){
                     const res = ensureProduct(r.batteryProd, r.isDead ? 'dead' : 'std');
                     if(res.created) newProducts++;
-                    addRow(r.batteryKW, res.p.name, r.id, r.customerName, 'Active', r.activationDate);
+                    addRow(r.batteryKW, res.p.name, r.id, r.customerName, 'Active', r.saleDate);
                     added++;
                 }
             });
